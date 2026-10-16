@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title th:text="${subject}">Test e-mail</title>
+</head>
+<body style="margin:0;padding:24px;background:#f4f5f7">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0"
+       style="max-width:600px;margin:0 auto;background:#ffffff;border:1px solid #e1e4e9;border-radius:8px">
+  <tr><td><table th:replace="~{fragments :: header}"></table></td></tr>
+  <tr>
+    <td style="padding:24px;color:#1a1d21;font-family:Inter,Segoe UI,Arial,sans-serif;font-size:14px;line-height:1.6">
+      <p style="margin:0 0 12px" th:text="'Hello ' + ${recipientName} + ','">Hello,</p>
+      <p style="margin:0 0 12px">This is a test e-mail from KRZ Attend. E-mail notifications are working.</p>
+      <p style="margin:0" th:if="${link != null}">
+        <a th:href="${link}" style="color:#1d4ea3">Notification settings</a>
+      </p>
+    </td>
+  </tr>
+  <tr><td><table th:replace="~{fragments :: footer(null)}"></table></td></tr>
+</table>
+</body>
+</html>

@@ -1,0 +1,86 @@
+[build-system]
+requires = ["setuptools==84.0.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "krz-worker"
+version = "0.4.0"
+description = "KRZ Attend vision worker: camera video in, crossings out (Redis stream)."
+requires-python = ">=3.11,<3.12"
+license = "LicenseRef-Proprietary"
+dependencies = [
+  "av==18.1.0",
+  "cryptography==50.0.2",
+  "defusedxml==0.7.1",
+  "fastapi==0.143.0",
+  "numpy==2.4.6",
+  "opencv-python-headless==5.0.0.93",
+  "psycopg[binary]==3.3.6",
+  "psycopg-pool==3.3.3",
+  "pydantic==2.14.1",
+  "pydantic-settings==2.15.0",
+  "python-dotenv==1.2.4",
+  "python-multipart==0.0.32",
+  "redis==8.1.0",
+  "supervision==0.30.9",
+  "uuid6==2025.0.1",
+  "uvicorn==0.54.0",
+]
+
+[project.optional-dependencies]
+# Exactly one of these: the GPU image (CUDA 13, NVIDIA driver >= 580) or the CPU image and development machines.
+# The GPU extra brings CUDA 13 and cuDNN 9 as NVIDIA's pip wheels (loaded by onnxruntime.preload_dlls()).
+gpu = ["onnxruntime-gpu[cuda,cudnn]==1.31.0"]
+cpu = ["onnxruntime==1.31.0"]
+dev = [
+  "fakeredis==2.39.0",
+  "httpx2==2.13.1",
+  "mypy==2.4.0",
+  "pip-audit==2.10.1",
+  "pip-licenses==5.5.5",
+  "pytest==9.1.1",
+  "ruff==0.17.0",
+  "uv==0.13.0",
+]
+
+[project.scripts]
+krz-worker = "krz_worker.__main__:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+src = ["src", "tests", "scripts"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "S", "SIM", "RUF", "N", "C4", "PT", "RET", "PL", "TRY", "BLE"]
+ignore = [
+  "PLR0913",  # pipeline steps take their collaborators explicitly
+  "PLR0917",  # ... and positionally, in the order the step uses them
+  "PLR2004",  # thresholds are named where they matter; small literals in maths are clearer inline
+  "TRY003",   # short messages in exceptions are the convention here
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101", "PLR0915"]
+"scripts/**" = ["T201", "S603", "S607"]
+
+[tool.mypy]
+strict = true
+python_version = "3.11"
+mypy_path = "src"
+plugins = ["pydantic.mypy"]
+
+[[tool.mypy.overrides]]
+module = ["supervision.*", "av.*", "onnxruntime.*", "cv2.*", "uuid6.*", "defusedxml.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+  "models: needs the ONNX models in MODELS_DIR (skipped when they are missing)",
+  "clips: needs recorded clips in data/clips (skipped when they are missing)",
+]
+addopts = "-ra --strict-markers"

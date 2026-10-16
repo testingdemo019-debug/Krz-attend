@@ -1,0 +1,16 @@
+/* Toaster — the prototype's CSS (docs/prototype/index.html), values unchanged. */
+.toast-stack{position:fixed;top:calc(var(--topbar-h, 56px) + 10px);right:16px;display:flex;flex-direction:column;gap:8px;z-index:300;align-items:flex-end;pointer-events:none;max-width:calc(100vw - 32px)}
+.toast{pointer-events:auto;display:flex;align-items:center;gap:10px;min-width:280px;max-width:560px;padding:10px 12px 10px 14px;border-radius:var(--radius);background:var(--surface-inv);color:var(--text-inv);box-shadow:var(--shadow-3);font-size:13.5px;animation:toastin .2s ease}
+@keyframes toastin{from{transform:translateY(10px);opacity:0}to{transform:none;opacity:1}}
+.toast .t-ic{flex:none}
+.toast.success .t-ic{color:#4ade80} .toast.error .t-ic{color:#f87171} .toast.warn .t-ic{color:#fbbf24} .toast.info .t-ic{color:#93c5fd}
+html[data-theme="dark"] .toast.success .t-ic{color:#15803d} html[data-theme="dark"] .toast.error .t-ic{color:#b91c1c} html[data-theme="dark"] .toast.warn .t-ic{color:#a16207} html[data-theme="dark"] .toast.info .t-ic{color:#1d4ed8}
+.toast .t-logged{font-size:11px;padding:1px 6px;border-radius:4px;background:rgba(255,255,255,.16);font-weight:600}
+html[data-theme="dark"] .toast .t-logged{background:rgba(0,0,0,.1)}
+.toast button{background:none;border:0;color:inherit;font-weight:700;cursor:pointer;padding:4px 6px;border-radius:4px;text-decoration:underline}
+.toast .t-close{opacity:.7;text-decoration:none}
+.toast .t-act{color:#fff}
+/* F6.10: bottom right on desktop and bottom centre on phones, above the unsaved-changes bar (--savebar-h is set while
+   one is shown), so a toast never covers the topbar or a primary action. */
+.toast-stack{top:auto;bottom:calc(16px + var(--savebar-h, 0px))}
+@media (max-width:560px){.toast-stack{bottom:calc(12px + var(--savebar-h, 0px));right:8px;left:8px;align-items:center}.toast{min-width:0}}

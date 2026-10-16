@@ -1,0 +1,134 @@
+{
+  "contract": "krz:crossings, schema v1 (backend prompt, Redis contract section 1)",
+  "usage": "Both the backend (CrossingMessage and CrossingIngestService tests) and the worker (stream producer tests) read this file. Every field is a string; an empty string means absent. Tests replace crossing_uid with a fresh UUID, and camera_code / employee_id with a real camera and an enrolled employee of their test data. 'expect' is the row the backend stores (the contract's mapping table); 'poison' messages go to krz:crossings:dead.",
+  "valid": [
+    {
+      "name": "Face match, IN, auto-accepted",
+      "fields": {
+        "v": "1", "crossing_uid": "01928a5e-3c1f-7b2a-9d4e-5f6a7b8c9d01", "camera_code": "CAM-01",
+        "ts": "2026-10-12T03:50:12.345Z", "direction": "IN", "u_turn": "false", "decision_hint": "AUTO",
+        "method": "FACE", "employee_id": "0b6e3c1a-5d2f-4e8b-9a7c-1d2e3f4a5b6c", "score": "0.8123",
+        "second_score": "0.4410", "margin": "0.3713", "agree_k": "4", "agree_n": "5", "reid_score": "",
+        "liveness": "PASSED", "liveness_score": "0.9700",
+        "quality": "{\"eye_px\":62,\"yaw\":4.5,\"pitch\":-2.0,\"sharp\":81,\"quality\":88}",
+        "candidates": "[{\"employee_id\":\"0b6e3c1a-5d2f-4e8b-9a7c-1d2e3f4a5b6c\",\"score\":0.8123}]",
+        "unknown_cluster": "", "face_crop": "2026/10/12/EV-face-01928a5e.enc", "face_crop_blur": "2026/10/12/EV-face-01928a5e.blur.enc",
+        "body_crop": "", "body_crop_blur": "", "track_id": "17",
+        "model_version": "yunet-2023mar+sface-2021dec+osnet-x1_0", "worker_id": "worker-1", "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736"
+      },
+      "expect": { "identity": true, "method": "FACE", "decision": "AUTO", "reviewType": null }
+    },
+    {
+      "name": "Back view, OUT, identified by Re-ID",
+      "fields": {
+        "v": "1", "crossing_uid": "01928a5e-3c1f-7b2a-9d4e-5f6a7b8c9d02", "camera_code": "CAM-01",
+        "ts": "2026-10-12T12:31:05.000Z", "direction": "OUT", "u_turn": "false", "decision_hint": "AUTO",
+        "method": "REID", "employee_id": "0b6e3c1a-5d2f-4e8b-9a7c-1d2e3f4a5b6c", "reid_score": "0.7740",
+        "agree_k": "3", "agree_n": "3", "liveness": "SKIPPED",
+        "candidates": "[{\"employee_id\":\"0b6e3c1a-5d2f-4e8b-9a7c-1d2e3f4a5b6c\",\"score\":0.774}]",
+        "body_crop": "2026/10/12/EV-body-01928a5e.enc", "body_crop_blur": "2026/10/12/EV-body-01928a5e.blur.enc",
+        "track_id": "23", "worker_id": "worker-1", "trace_id": "5cf92f3577b34da6a3ce929d0e0e4737"
+      },
+      "expect": { "identity": true, "method": "REID", "decision": "AUTO", "reviewType": null }
+    },
+    {
+      "name": "Uncertain match: the candidate is never stored as the identity",
+      "fields": {
+        "v": "1", "crossing_uid": "01928a5e-3c1f-7b2a-9d4e-5f6a7b8c9d03", "camera_code": "CAM-01",
+        "ts": "2026-10-12T04:02:40.100Z", "direction": "IN", "u_turn": "false", "decision_hint": "UNCERTAIN",
+        "method": "NONE", "employee_id": "0b6e3c1a-5d2f-4e8b-9a7c-1d2e3f4a5b6c", "score": "0.5810",
+        "second_score": "0.5520", "margin": "0.0290", "agree_k": "2", "agree_n": "5", "liveness": "PASSED",
+        "candidates": "[{\"employee_id\":\"0b6e3c1a-5d2f-4e8b-9a7c-1d2e3f4a5b6c\",\"score\":0.581}]",
+        "track_id": "31", "worker_id": "worker-1", "trace_id": "6df92f3577b34da6a3ce929d0e0e4738"
+      },
+      "expect": { "identity": false, "method": null, "decision": "PENDING_REVIEW", "reviewType": "UNCERTAIN" }
+    },
+    {
+      "name": "Unknown face joins its cluster",
+      "fields": {
+        "v": "1", "crossing_uid": "01928a5e-3c1f-7b2a-9d4e-5f6a7b8c9d04", "camera_code": "CAM-01",
+        "ts": "2026-10-12T15:14:00.000Z", "direction": "IN", "u_turn": "false", "decision_hint": "UNKNOWN",
+        "method": "NONE", "employee_id": "", "score": "0.2100", "liveness": "PASSED",
+        "unknown_cluster": "2026-10-12:A3", "face_crop": "2026/10/12/EV-face-unknown.enc",
+        "track_id": "40", "worker_id": "worker-1", "trace_id": "7ef92f3577b34da6a3ce929d0e0e4739"
+      },
+      "expect": { "identity": false, "method": null, "decision": "PENDING_REVIEW", "reviewType": "UNKNOWN", "unknownLabel": "Unknown #A3" }
+    },
+    {
+      "name": "Liveness failure (possible spoof)",
+      "fields": {
+        "v": "1", "crossing_uid": "01928a5e-3c1f-7b2a-9d4e-5f6a7b8c9d05", "camera_code": "CAM-01",
+        "ts": "2026-10-12T05:00:00.000Z", "direction": "IN", "u_turn": "false", "decision_hint": "LIVENESS_FAIL",
+        "method": "NONE", "employee_id": "0b6e3c1a-5d2f-4e8b-9a7c-1d2e3f4a5b6c", "score": "0.7900",
+        "liveness": "FAILED", "liveness_score": "0.1200", "track_id": "44", "worker_id": "worker-1",
+        "trace_id": "8ff92f3577b34da6a3ce929d0e0e4740"
+      },
+      "expect": { "identity": false, "method": null, "decision": "PENDING_REVIEW", "reviewType": "LIVENESS" }
+    },
+    {
+      "name": "Uncertain back-view exit",
+      "fields": {
+        "v": "1", "crossing_uid": "01928a5e-3c1f-7b2a-9d4e-5f6a7b8c9d06", "camera_code": "CAM-01",
+        "ts": "2026-10-12T12:45:00.000Z", "direction": "OUT", "u_turn": "false", "decision_hint": "REID_UNCERTAIN",
+        "method": "NONE", "employee_id": "", "reid_score": "0.5100", "liveness": "SKIPPED",
+        "candidates": "[{\"employee_id\":\"0b6e3c1a-5d2f-4e8b-9a7c-1d2e3f4a5b6c\",\"score\":0.51}]",
+        "track_id": "52", "worker_id": "worker-1", "trace_id": "90f92f3577b34da6a3ce929d0e0e4741"
+      },
+      "expect": { "identity": false, "method": null, "decision": "PENDING_REVIEW", "reviewType": "REID" }
+    },
+    {
+      "name": "U-turn of an identified person: stored, no review item, ignored by the rules",
+      "fields": {
+        "v": "1", "crossing_uid": "01928a5e-3c1f-7b2a-9d4e-5f6a7b8c9d07", "camera_code": "CAM-01",
+        "ts": "2026-10-12T06:10:00.000Z", "direction": "IN", "u_turn": "true", "decision_hint": "AUTO",
+        "method": "FACE", "employee_id": "0b6e3c1a-5d2f-4e8b-9a7c-1d2e3f4a5b6c", "score": "0.8000",
+        "liveness": "PASSED", "track_id": "60", "worker_id": "worker-1", "trace_id": "a1f92f3577b34da6a3ce929d0e0e4742"
+      },
+      "expect": { "identity": true, "method": "FACE", "decision": "AUTO", "reviewType": null, "effect": "IGNORED_TURNED_BACK" }
+    },
+    {
+      "name": "U-turn of an unknown person: never a review item",
+      "fields": {
+        "v": "1", "crossing_uid": "01928a5e-3c1f-7b2a-9d4e-5f6a7b8c9d08", "camera_code": "CAM-01",
+        "ts": "2026-10-12T06:11:00.000Z", "direction": "OUT", "u_turn": "true", "decision_hint": "UNKNOWN",
+        "method": "NONE", "employee_id": "", "unknown_cluster": "2026-10-12:B1", "track_id": "61",
+        "worker_id": "worker-1", "trace_id": "b2f92f3577b34da6a3ce929d0e0e4743"
+      },
+      "expect": { "identity": false, "method": null, "decision": "AUTO", "reviewType": null, "effect": "IGNORED_TURNED_BACK" }
+    }
+  ],
+  "poison": [
+    {
+      "name": "Unknown schema version",
+      "fields": { "v": "2", "crossing_uid": "01928a5e-3c1f-7b2a-9d4e-5f6a7b8c9e01", "camera_code": "CAM-01", "ts": "2026-10-12T03:50:12.345Z", "direction": "IN", "u_turn": "false", "decision_hint": "AUTO", "method": "FACE", "employee_id": "0b6e3c1a-5d2f-4e8b-9a7c-1d2e3f4a5b6c" }
+    },
+    {
+      "name": "Missing direction",
+      "fields": { "v": "1", "crossing_uid": "01928a5e-3c1f-7b2a-9d4e-5f6a7b8c9e02", "camera_code": "CAM-01", "ts": "2026-10-12T03:50:12.345Z", "u_turn": "false", "decision_hint": "UNKNOWN", "method": "NONE" }
+    },
+    {
+      "name": "AUTO without an employee",
+      "fields": { "v": "1", "crossing_uid": "01928a5e-3c1f-7b2a-9d4e-5f6a7b8c9e03", "camera_code": "CAM-01", "ts": "2026-10-12T03:50:12.345Z", "direction": "IN", "u_turn": "false", "decision_hint": "AUTO", "method": "FACE", "employee_id": "" }
+    },
+    {
+      "name": "Timestamp without a zone",
+      "fields": { "v": "1", "crossing_uid": "01928a5e-3c1f-7b2a-9d4e-5f6a7b8c9e04", "camera_code": "CAM-01", "ts": "2026-10-12 09:20:12", "direction": "IN", "u_turn": "false", "decision_hint": "UNKNOWN", "method": "NONE" }
+    },
+    {
+      "name": "Crop path leaving the crops folder",
+      "fields": { "v": "1", "crossing_uid": "01928a5e-3c1f-7b2a-9d4e-5f6a7b8c9e05", "camera_code": "CAM-01", "ts": "2026-10-12T03:50:12.345Z", "direction": "IN", "u_turn": "false", "decision_hint": "UNKNOWN", "method": "NONE", "face_crop": "../uploads/consent.pdf" }
+    },
+    {
+      "name": "Score out of range",
+      "fields": { "v": "1", "crossing_uid": "01928a5e-3c1f-7b2a-9d4e-5f6a7b8c9e06", "camera_code": "CAM-01", "ts": "2026-10-12T03:50:12.345Z", "direction": "IN", "u_turn": "false", "decision_hint": "UNCERTAIN", "method": "NONE", "score": "12.5" }
+    },
+    {
+      "name": "Candidates not a JSON array",
+      "fields": { "v": "1", "crossing_uid": "01928a5e-3c1f-7b2a-9d4e-5f6a7b8c9e07", "camera_code": "CAM-01", "ts": "2026-10-12T03:50:12.345Z", "direction": "IN", "u_turn": "false", "decision_hint": "UNCERTAIN", "method": "NONE", "candidates": "{\"employee_id\":\"x\"}" }
+    },
+    {
+      "name": "Malformed unknown cluster",
+      "fields": { "v": "1", "crossing_uid": "01928a5e-3c1f-7b2a-9d4e-5f6a7b8c9e08", "camera_code": "CAM-01", "ts": "2026-10-12T03:50:12.345Z", "direction": "IN", "u_turn": "false", "decision_hint": "UNKNOWN", "method": "NONE", "unknown_cluster": "A3" }
+    }
+  ]
+}

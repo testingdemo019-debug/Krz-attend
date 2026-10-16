@@ -1,0 +1,7 @@
+/* Timeline — the prototype's CSS (docs/prototype/index.html), values unchanged. */
+.timeline{position:relative;padding-left:22px}
+.timeline::before{content:"";position:absolute;left:7px;top:4px;bottom:4px;width:2px;background:var(--border)}
+.tl-item{position:relative;padding:0 0 16px}
+.tl-item::before{content:"";position:absolute;left:-19px;top:5px;width:10px;height:10px;border-radius:50%;background:var(--surface);border:2px solid var(--accent)}
+.tl-item.void::before{border-color:var(--grey-line)}
+.tl-item.raw::before{border-color:var(--border-strong);width:8px;height:8px;left:-18px}

@@ -1,0 +1,10 @@
+/* Print — the prototype's CSS (docs/prototype/index.html), values unchanged; the prototype-only elements are gone. */
+@media print{.sidebar,.topbar{display:none}}
+#print-area{display:none}
+@media print{
+  body.printing>*:not(#print-area){display:none!important}
+  body.printing #print-area{display:block;color:#000;background:#fff;font:12pt/1.4 system-ui,sans-serif}
+  body.printing #print-area table{width:100%;border-collapse:collapse}
+  body.printing #print-area th,body.printing #print-area td{border:1px solid #999;padding:4px 6px;text-align:left}
+  body.printing #print-area h1{font-size:18pt;margin:0 0 6px}
+}

@@ -1,0 +1,2 @@
+/* CodeBlock — the prototype's CSS (docs/prototype/index.html), values unchanged. */
+.code-block{background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;overflow:auto;max-height:260px;margin:0;white-space:pre}

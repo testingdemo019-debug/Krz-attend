@@ -1,0 +1,25 @@
+/* DataTable — the prototype's CSS (docs/prototype/index.html), values unchanged. */
+.dt-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow-1);min-width:0}
+.dt-toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:12px 12px 10px;border-bottom:1px solid var(--border)}
+.dt-search{position:relative;width:260px;max-width:100%}
+.dt-search .input{padding-left:32px}
+.dt-search .ic{position:absolute;left:9px;top:8px;color:var(--text-3)}
+.filter-btn{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 10px;border:1px dashed var(--border-strong);border-radius:var(--radius-sm);background:var(--surface);color:var(--text-2);font-size:12.5px;font-weight:550;cursor:pointer;white-space:nowrap}
+.filter-btn:hover{background:var(--surface-3)}
+.filter-btn.on{border-style:solid;border-color:var(--accent);background:var(--accent-weak);color:var(--accent-text)}
+.dt-wrap{overflow-x:auto}
+table.dt{width:100%;border-collapse:separate;border-spacing:0;font-size:13.5px}
+table.dt th{position:sticky;top:0;background:var(--surface-2);text-align:left;font-weight:600;font-size:12px;color:var(--text-2);padding:9px 12px;border-bottom:1px solid var(--border);white-space:nowrap;z-index:1}
+table.dt th.sortable{cursor:pointer;user-select:none}
+table.dt th.sortable:hover{color:var(--text)}
+table.dt th .sort-ic{opacity:.35;margin-left:2px}
+table.dt th.sorted .sort-ic{opacity:1;color:var(--accent-text)}
+table.dt td{padding:var(--row-pad) 12px;border-bottom:1px solid var(--border);vertical-align:middle}
+table.dt tr:last-child td{border-bottom:0}
+table.dt tbody tr.clickable{cursor:pointer}
+table.dt tbody tr:hover td{background:var(--surface-2)}
+table.dt tbody tr.selected td{background:var(--accent-weak)}
+table.dt td.num,table.dt th.num{text-align:right}
+.dt-footer{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;border-top:1px solid var(--border);font-size:12.5px;color:var(--text-2);flex-wrap:wrap}
+.pager{display:flex;align-items:center;gap:6px}
+.bulkbar{display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--accent-weak);color:var(--accent-text);border-bottom:1px solid var(--border);font-size:13px;font-weight:550}

@@ -1,0 +1,12 @@
+/* DateField — the prototype's CSS (docs/prototype/index.html), values unchanged. */
+.datefield{position:relative;display:block;width:100%}
+.datefield .df-display{padding-right:34px;cursor:pointer;background:var(--surface)}
+.datefield .df-ic{position:absolute;right:10px;top:50%;transform:translateY(-50%);color:var(--text-3);pointer-events:none}
+.df-cal{position:fixed;z-index:420;width:272px;background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow-3);padding:10px}
+.df-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.df-dow{font-size:11px;color:var(--text-3);text-align:center;font-weight:600;padding:4px 0}
+.df-day{height:32px;border:0;border-radius:7px;background:none;color:var(--text);font-size:13px;cursor:pointer;font-variant-numeric:tabular-nums}
+.df-day:hover:not([disabled]){background:var(--surface-3)}
+.df-day.today{box-shadow:inset 0 0 0 1.5px var(--accent)}
+.df-day.sel{background:var(--accent);color:#fff;font-weight:650}
+.df-day[disabled]{opacity:.35;cursor:not-allowed}

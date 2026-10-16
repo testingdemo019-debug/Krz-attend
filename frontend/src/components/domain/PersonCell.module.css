@@ -1,0 +1,4 @@
+/* PersonCell — the prototype's CSS (docs/prototype/index.html), values unchanged. */
+.cell-person{display:flex;align-items:center;gap:10px;min-width:0}
+.cell-person .nm{font-weight:600;color:var(--text)}
+.cell-person .sub{font-size:12px;color:var(--text-3)}

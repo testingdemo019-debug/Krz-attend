@@ -1,0 +1,199 @@
+# KRZ Attend backend — everything is bound from the environment (deploy/.env) with safe defaults.
+# Profiles: dev (host run, imports ../deploy/.env), prod (containers). Secrets never appear here.
+
+spring:
+  application:
+    name: krz-attend-backend
+  threads:
+    virtual:
+      enabled: true
+  lifecycle:
+    timeout-per-shutdown-phase: 20s
+  datasource:
+    url: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}?ApplicationName=krz-attend-backend
+    username: ${DB_APP_USER}
+    password: ${DB_APP_PASSWORD}
+    hikari:
+      pool-name: krz-app
+      maximum-pool-size: ${DB_POOL_MAX:20}
+      # milliseconds (HikariCP binds a plain long)
+      connection-timeout: 5000
+  flyway:
+    url: ${spring.datasource.url}
+    user: ${DB_OWNER_USER}
+    password: ${DB_OWNER_PASSWORD}
+    schemas: attend
+    default-schema: attend
+    create-schemas: false
+    locations: classpath:db/migration,classpath:db/seed/reference
+    validate-on-migrate: true
+    out-of-order: false
+    placeholder-replacement: false
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        default_schema: attend
+        # Collections (role permissions, a user's roles) load for up to 100 owners in one query, not one per row.
+        default_batch_fetch_size: 100
+        jdbc:
+          time_zone: UTC
+  data:
+    redis:
+      host: ${REDIS_HOST:redis}
+      port: ${REDIS_PORT:6379}
+      username: ${REDIS_BACKEND_USER:krz_backend}
+      password: ${REDIS_BACKEND_PASSWORD}
+      timeout: 2s
+      connect-timeout: 2s
+  session:
+    timeout: ${SESSION_ABSOLUTE_HOURS:12}h
+    data:
+      redis:
+        namespace: "krz:session"
+        repository-type: indexed
+        flush-mode: on-save
+        # The Redis ACL denies CONFIG; redis.conf sets notify-keyspace-events Egx instead.
+        configure-action: none
+  jackson:
+    deserialization:
+      fail-on-unknown-properties: true
+  servlet:
+    multipart:
+      max-file-size: 6MB
+      max-request-size: 6MB
+
+server:
+  port: 8080
+  shutdown: graceful
+  # Tomcat's RemoteIpValve applies X-Forwarded-* only from trusted proxies (nginx on the internal network,
+  # the Vite dev proxy on localhost), so OIDC redirects use the forwarded host and client IPs cannot be forged.
+  forward-headers-strategy: native
+  tomcat:
+    remoteip:
+      internal-proxies: "127\\.0\\.0\\.1|0:0:0:0:0:0:0:1|::1|172\\.28\\.0\\.\\d{1,3}"
+      remote-ip-header: X-Forwarded-For
+      protocol-header: X-Forwarded-Proto
+      host-header: X-Forwarded-Host
+      port-header: X-Forwarded-Port
+  servlet:
+    session:
+      timeout: ${SESSION_ABSOLUTE_HOURS:12}h
+      cookie:
+        name: KRZSESSION
+        http-only: true
+        same-site: lax
+        # Secure follows the request (https behind nginx via X-Forwarded-Proto); prod forces it on.
+        path: /
+
+management:
+  server:
+    port: 8081
+  endpoints:
+    access:
+      default: none
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      access: read-only
+      probes:
+        enabled: true
+      show-details: never
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+  paths-to-match: /api/**
+  default-produces-media-type: application/json
+  default-consumes-media-type: application/json
+  # Stable order, so docs/api/openapi.json only changes when the API does.
+  writer-with-order-by-keys: true
+
+krz:
+  app:
+    env: ${APP_ENV:dev}
+    version: ${APP_VERSION:0.0.0}
+    base-url: ${APP_BASE_URL:http://localhost:5173}
+    timezone: ${APP_TIMEZONE:Asia/Kolkata}
+    org-name: ${ORG_NAME:KRZ Technologies Pvt. Ltd.}
+    org-domain: ${ORG_DOMAIN:krztechnologies.com}
+    bootstrap-admin-emails: ${BOOTSTRAP_ADMIN_EMAILS:}
+    data-dir: ${DATA_DIR:/data}
+    session-absolute-hours: ${SESSION_ABSOLUTE_HOURS:12}
+    helpdesk-email: ${IT_HELPDESK_EMAIL:}
+  entra:
+    tenant-id: ${ENTRA_TENANT_ID}
+    client-id: ${ENTRA_CLIENT_ID}
+    client-secret: ${ENTRA_CLIENT_SECRET:}
+    client-secret-expires: ${ENTRA_CLIENT_SECRET_EXPIRES:}
+    allowed-domain: ${ENTRA_ALLOWED_DOMAIN:krztechnologies.com}
+    sync-scope: ${ENTRA_SYNC_SCOPE:all}
+    sync-group-ids: ${ENTRA_SYNC_GROUP_IDS:}
+    sync-exclude: ${ENTRA_SYNC_EXCLUDE:}
+    login-base-url: https://login.microsoftonline.com
+    graph-base-url: https://graph.microsoft.com/v1.0
+  mail:
+    enabled: ${MAIL_ENABLED:true}
+    provider: ${MAIL_PROVIDER:graph}
+    sender: ${MAIL_SENDER:attend-noreply@krztechnologies.com}
+    test-recipient: ${MAIL_TEST_RECIPIENT:}
+  push:
+    enabled: ${PUSH_ENABLED:false}
+  hrms:
+    enabled: ${HRMS_ENABLED:false}
+  # Recognition worker: internal API (X-Worker-Token) and the ID of its heartbeat key krz:hb:worker:<id>.
+  worker:
+    id: ${WORKER_ID:worker-1}
+    url: ${WORKER_API_URL:http://worker:8090}
+    token: ${WORKER_API_TOKEN:}
+  # go2rtc API (basic auth); the backend registers each camera's sub stream there.
+  media-relay:
+    url: ${MEDIA_RELAY_URL:http://media-relay:1984}
+    user: ${GO2RTC_API_USER:krz_relay}
+    password: ${GO2RTC_API_PASSWORD:}
+  # Scheduled jobs (e-mail sender, directory sync, …); the integration tests turn them off and run them directly.
+  scheduling:
+    enabled: true
+  # Defaults of the settings areas; app_setting rows override them field by field.
+  settings:
+    general:
+      org-name: ${ORG_NAME:KRZ Technologies Pvt. Ltd.}
+      timezone: ${APP_TIMEZONE:Asia/Kolkata}
+      date-format: D MMM YYYY
+      time-format: 12h
+      employee-id-pattern: '^EMP-\d{4,6}$'
+      undo-window-seconds: 10
+    signin:
+      idle-timeout-min: 30
+      sync-every: 6
+      erase-after-days: 30
+    attendance-rules:
+      duplicate-minutes: 2
+      turned-back-seconds: 60
+      absent-cutoff-hours: 4
+      worked-hours: SPAN
+      push-mode: FINAL
+    enrolment:
+      min-good: 3
+      min-quality: 70
+      min-eye-px: 90
+      liveness-required: true
+      allow-upload: true
+      dup-threshold: 0.40
+      lock-failures: 5
+      lock-window-min: 3
+      lock-minutes: 30
+    privacy:
+      crop-days: 30
+      unknown-hours: 24
+      event-days: 365
+      audit-days: 365
+    hrms:
+      max-attempts: 5
+      backoff-seconds: [5, 15, 30, 60, 120]

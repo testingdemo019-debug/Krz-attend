@@ -1,0 +1,7 @@
+/* CodeCell — the prototype's CSS (docs/prototype/index.html), values unchanged. */
+.code-cell{min-width:30px;height:24px;justify-content:center;padding:0 6px;font-family:var(--mono);font-size:11.5px;font-weight:650;cursor:pointer;border:1px solid transparent}
+.code-cell:hover{border-color:var(--text-3)}
+.code-cell.hl{outline:2px solid var(--accent);outline-offset:1px}
+td.code-col{text-align:center;padding-left:4px;padding-right:4px}
+td.hl-col{background:var(--accent-weak)}
+.code-cell sup{font-size:9px;margin-left:1px}

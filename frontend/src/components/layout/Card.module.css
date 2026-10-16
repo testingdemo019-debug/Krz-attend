@@ -1,0 +1,7 @@
+/* Card — the prototype's CSS (docs/prototype/index.html), values unchanged. */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow-1);min-width:0}
+.card-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px 0}
+.card-head h2,.card-head h3{font-size:14.5px}
+.card-body{padding:14px 16px 16px}
+.card-body.flush{padding:0}
+.card.pad{padding:16px}

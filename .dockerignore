@@ -1,0 +1,20 @@
+# Used by every image build (build context = project root).
+# Secrets, runtime data and build output never enter a build context.
+**/.env*
+data/
+**/node_modules
+**/target
+**/target-*
+**/.venv
+**/dist
+**/__pycache__
+**/*.egg-info
+**/.pytest_cache
+**/.mypy_cache
+**/.ruff_cache
+database/bootstrap/check-report.txt
+deploy/redis/users.acl
+frontend/test/parity/diff/
+frontend/test/parity/reference/
+frontend/test-results/
+frontend/playwright-report/

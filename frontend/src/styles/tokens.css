@@ -1,0 +1,46 @@
+/* Design tokens — the prototype's CSS (docs/prototype/index.html), values unchanged. */
+:root{
+  --font: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --radius: 8px; --radius-sm: 6px; --radius-lg: 12px;
+  --sidebar-w: 248px; --sidebar-w-c: 64px; --topbar-h: 56px;
+  --shadow-1: 0 1px 2px rgba(16,24,40,.06), 0 1px 3px rgba(16,24,40,.08);
+  --shadow-2: 0 4px 12px rgba(16,24,40,.10), 0 2px 4px rgba(16,24,40,.06);
+  --shadow-3: 0 16px 40px rgba(16,24,40,.18), 0 4px 12px rgba(16,24,40,.08);
+  --row-pad: 10px;
+}
+html[data-theme="light"]{
+  color-scheme: light;
+  --bg:#f4f5f7; --surface:#ffffff; --surface-2:#f8f9fb; --surface-3:#eef0f3; --surface-inv:#1b1f24;
+  --border:#e1e4e9; --border-strong:#c9ced6;
+  --text:#1a1d21; --text-2:#454c57; --text-3:#646c78; --text-inv:#ffffff;
+  --accent:#1d4ea3; --accent-hover:#173f86; --accent-weak:#e7eefb; --accent-text:#1d4ea3; --on-accent:#ffffff;
+  --focus:#2563eb;
+  --green:#17703f; --green-bg:#e3f3ea; --green-line:#2f9e5f;
+  --amber:#8f5100; --amber-bg:#fcefd9; --amber-line:#d98a1c;
+  --red:#b0261b; --red-bg:#fbe9e7; --red-line:#cc4134;
+  --purple:#6435b0; --purple-bg:#f0e9fb; --purple-line:#8b5cf6;
+  --grey:#535b67; --grey-bg:#eceef1; --grey-line:#8a929e;
+  --blue:#1d4ea3; --blue-bg:#e7eefb;
+  --scrim: rgba(17,24,39,.42);
+  --chart-muted:#c3c8d0; --chart-grid:#e9ecf0;
+}
+html[data-theme="dark"]{
+  color-scheme: dark;
+  --bg:#0e1115; --surface:#161a20; --surface-2:#1b2027; --surface-3:#222831; --surface-inv:#e8ebef;
+  --border:#2a313b; --border-strong:#3a4350;
+  --text:#e7eaee; --text-2:#b8bfca; --text-3:#8f99a7; --text-inv:#111418;
+  --accent:#6b9bf2; --accent-hover:#8ab0f5; --accent-weak:#1b2944; --accent-text:#8fb3f6; --on-accent:#0b1220;
+  --focus:#8ab0f5;
+  --green:#5fd394; --green-bg:#12301f; --green-line:#3fbf78;
+  --amber:#f3b25a; --amber-bg:#33260f; --amber-line:#e39a33;
+  --red:#ff8a80; --red-bg:#3a1714; --red-line:#f06a5e;
+  --purple:#c4a6ff; --purple-bg:#2a1f42; --purple-line:#a07cf5;
+  --grey:#a8b0bc; --grey-bg:#262c35; --grey-line:#7c8592;
+  --blue:#8fb3f6; --blue-bg:#1b2944;
+  --scrim: rgba(0,0,0,.6);
+  --chart-muted:#4a525e; --chart-grid:#252b33;
+  --shadow-1: 0 1px 2px rgba(0,0,0,.4);
+  --shadow-2: 0 4px 12px rgba(0,0,0,.45);
+  --shadow-3: 0 16px 40px rgba(0,0,0,.6);
+}

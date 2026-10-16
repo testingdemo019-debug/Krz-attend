@@ -1,0 +1,12 @@
+# Production (containers behind nginx). JSON logs come from logback-spring.xml's prod profile.
+server:
+  servlet:
+    session:
+      cookie:
+        secure: true
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false

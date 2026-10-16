@@ -1,0 +1,7 @@
+/* Callout — the prototype's CSS (docs/prototype/index.html), values unchanged. */
+.callout{display:flex;gap:10px;padding:11px 13px;border-radius:var(--radius);background:var(--blue-bg);color:var(--text);font-size:13px;border:1px solid transparent}
+.callout .ic{color:var(--blue);margin-top:1px}
+.callout.warn{background:var(--amber-bg)} .callout.warn .ic{color:var(--amber)}
+.callout.danger{background:var(--red-bg)} .callout.danger .ic{color:var(--red)}
+.callout.ok{background:var(--green-bg)} .callout.ok .ic{color:var(--green)}
+.callout.neutral{background:var(--surface-2);border-color:var(--border)} .callout.neutral .ic{color:var(--text-3)}

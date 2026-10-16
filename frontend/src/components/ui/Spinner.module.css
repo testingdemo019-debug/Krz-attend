@@ -1,0 +1,5 @@
+/* Spinner — the prototype's CSS (docs/prototype/index.html), values unchanged. */
+.spinner{width:28px;height:28px;border-radius:50%;border:3px solid rgba(255,255,255,.2);border-top-color:#fff;animation:spin .8s linear infinite}
+.spinner.dark{border-color:var(--border);border-top-color:var(--accent)}
+.spinner.sm{width:16px;height:16px;border-width:2px}
+@keyframes spin{to{transform:rotate(360deg)}}

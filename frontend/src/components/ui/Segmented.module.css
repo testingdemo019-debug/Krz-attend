@@ -1,0 +1,7 @@
+/* Segmented — the prototype's CSS (docs/prototype/index.html), values unchanged. */
+.seg{display:inline-flex;border:1px solid var(--border-strong);border-radius:var(--radius-sm);overflow:hidden;background:var(--surface)}
+.seg button{border:0;background:transparent;height:32px;padding:0 12px;font-size:13px;font-weight:550;color:var(--text-2);cursor:pointer;display:inline-flex;align-items:center;gap:6px;border-right:1px solid var(--border)}
+.seg button:last-child{border-right:0}
+.seg button.on{background:var(--accent-weak);color:var(--accent-text)}
+.seg button:hover:not(.on){background:var(--surface-3)}
+.seg.sm button{height:26px;padding:0 9px;font-size:12px}

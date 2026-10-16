@@ -1,0 +1,3 @@
+/* KeyValueList — the prototype's CSS (docs/prototype/index.html), values unchanged. */
+.kv{display:grid;grid-template-columns:minmax(120px,38%) 1fr;gap:8px 14px;font-size:13.5px}
+.kv dt{color:var(--text-3)} .kv dd{margin:0;min-width:0;word-break:break-word}

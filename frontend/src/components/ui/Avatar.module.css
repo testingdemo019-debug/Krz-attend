@@ -1,0 +1,9 @@
+/* Avatar — the prototype's CSS (docs/prototype/index.html), values unchanged. */
+.avatar{width:32px;height:32px;border-radius:50%;overflow:hidden;flex:none;background:var(--surface-3);display:inline-block}
+.avatar.sm{width:26px;height:26px}.avatar.lg{width:56px;height:56px}.avatar.xl{width:80px;height:80px}
+/* F7: initials on a palette colour instead of the generated faces (decorative; the name is always written next to it). */
+.avatar.initials{display:inline-grid;place-items:center;color:#fff;font-weight:650;font-size:12px;line-height:1;letter-spacing:.02em;user-select:none}
+.avatar.initials.sm{font-size:10.5px}
+.avatar.initials.lg{font-size:20px}
+.avatar.initials.xl{font-size:28px}
+.avatar.initials.unknown{color:var(--text-3)}

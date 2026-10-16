@@ -1,0 +1,19 @@
+/* AppShell — the prototype's CSS (docs/prototype/index.html), values unchanged. */
+#app{min-height:100vh}
+.shell{display:grid;grid-template-columns:var(--sidebar-w) 1fr;min-height:100vh;transition:grid-template-columns .2s ease}
+.shell.collapsed{grid-template-columns:var(--sidebar-w-c) 1fr}
+.main{min-width:0;display:flex;flex-direction:column}
+.content{padding:20px 24px 80px;max-width:1720px;width:100%;margin:0 auto}
+.content.full{max-width:none}
+@media (max-width:900px){
+  .shell{grid-template-columns:var(--sidebar-w-c) 1fr}
+  .shell .nav-section,.shell .nav-label,.shell .brand-text,.shell .nav-item .badge{display:none}
+  .shell .nav-item{justify-content:center;padding:9px}
+  .content{padding:16px 14px 80px}
+  .status-pill .sp-text{display:none}
+  .search .kbd{display:none}
+}
+.skip-link{position:absolute;left:12px;top:-60px;z-index:400;background:var(--surface);color:var(--text);padding:8px 12px;border-radius:8px;border:2px solid var(--focus);font-weight:600}
+.skip-link:focus{top:10px}
+/* F6.11: below 900 px the rail shows icons only; the labels are hidden from sight but still name the links. */
+@media (max-width:900px){.shell .nav-label{display:block;position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0;white-space:nowrap}}

@@ -1,0 +1,5 @@
+/* Tooltip (data-tip) — the prototype's CSS (docs/prototype/index.html), values unchanged. */
+[data-tip]{position:relative}
+[data-tip]:hover::after,[data-tip]:focus-visible::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:var(--surface-inv);color:var(--text-inv);font-size:12px;font-weight:500;padding:5px 8px;border-radius:5px;white-space:nowrap;z-index:200;pointer-events:none;box-shadow:var(--shadow-2)}
+[data-tip-pos="bottom"]:hover::after{bottom:auto;top:calc(100% + 6px)}
+[data-tip-pos="left"]:hover::after{left:auto;right:calc(100% + 6px);bottom:50%;transform:translateY(50%)}

@@ -1,0 +1,62 @@
+<?xml version="1.0"?>
+<!DOCTYPE module PUBLIC "-//Checkstyle//DTD Checkstyle Configuration 1.3//EN" "https://checkstyle.org/dtds/configuration_1_3.dtd">
+<!--
+  Checkstyle rules for KRZ Attend. Formatting is Spotless' job (palantir-java-format); these rules catch
+  correctness and hygiene problems. The build fails on any violation.
+-->
+<module name="Checker">
+  <property name="charset" value="UTF-8"/>
+  <property name="severity" value="error"/>
+  <property name="fileExtensions" value="java"/>
+
+  <!-- No TODO/FIXME: unfinished work goes to docs/PENDING.md with an ID (// PENDING P-07). -->
+  <module name="RegexpSingleline">
+    <property name="format" value="\b(TODO|FIXME|XXX)\b"/>
+    <property name="message" value="No TODO/FIXME comments: record the item in docs/PENDING.md and reference its ID."/>
+  </module>
+  <module name="RegexpSingleline">
+    <property name="format" value="System\.(out|err)\.print|\.printStackTrace\(\)"/>
+    <property name="message" value="Use the logger, never System.out/err or printStackTrace."/>
+  </module>
+
+  <module name="TreeWalker">
+    <module name="AvoidStarImport"/>
+    <module name="RedundantImport"/>
+    <module name="UnusedImports"/>
+    <module name="IllegalImport">
+      <property name="illegalPkgs" value="sun, jdk.internal, org.junit.jupiter.api.Assertions"/>
+      <property name="illegalClasses" value="com.fasterxml.jackson.databind.ObjectMapper"/>
+    </module>
+    <module name="NeedBraces"/>
+    <module name="EmptyBlock">
+      <property name="option" value="TEXT"/>
+    </module>
+    <module name="EmptyCatchBlock"/>
+    <module name="EqualsHashCode"/>
+    <module name="SimplifyBooleanExpression"/>
+    <module name="SimplifyBooleanReturn"/>
+    <module name="StringLiteralEquality"/>
+    <module name="OneStatementPerLine"/>
+    <module name="MultipleVariableDeclarations"/>
+    <module name="ModifierOrder"/>
+    <module name="RedundantModifier"/>
+    <module name="FinalClass"/>
+    <module name="HideUtilityClassConstructor">
+      <property name="ignoreAnnotatedBy" value="SpringBootApplication"/>
+    </module>
+    <module name="UpperEll"/>
+    <module name="ArrayTypeStyle"/>
+    <module name="MissingOverride"/>
+    <module name="FallThrough"/>
+    <module name="DefaultComesLast"/>
+    <module name="PackageName">
+      <property name="format" value="^com\.krztechnologies\.attend(\.[a-z][a-z0-9]*)*$"/>
+    </module>
+    <module name="TypeName"/>
+    <module name="MethodName"/>
+    <module name="ConstantName"/>
+    <module name="LocalVariableName"/>
+    <module name="MemberName"/>
+    <module name="ParameterName"/>
+  </module>
+</module>

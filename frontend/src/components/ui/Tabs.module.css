@@ -1,0 +1,7 @@
+/* Tabs — the prototype's CSS (docs/prototype/index.html), values unchanged. */
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--border);margin-bottom:16px;overflow-x:auto}
+.tab{display:inline-flex;align-items:center;gap:7px;padding:10px 12px;border:0;background:transparent;color:var(--text-2);font-weight:550;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;text-decoration:none}
+.tab:hover{color:var(--text);text-decoration:none}
+.tab.active{color:var(--accent-text);border-bottom-color:var(--accent)}
+.tab .badge{background:var(--surface-3);color:var(--text-2)}
+.tab.active .badge{background:var(--accent);color:var(--on-accent)}

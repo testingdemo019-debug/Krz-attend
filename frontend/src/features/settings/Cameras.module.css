@@ -1,0 +1,5 @@
+/* Settings · Cameras — the prototype's CSS (docs/prototype/index.html), values unchanged. */
+.editor-wrap{position:relative;border-radius:var(--radius);overflow:hidden;background:#000;user-select:none}
+.editor-wrap canvas{display:block;width:100%;height:auto;cursor:crosshair}
+/* The stream URL field: the masked prefix and the editable path in one box (D-103); the box shows the focus ring. */
+.stream-path:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-weak)}

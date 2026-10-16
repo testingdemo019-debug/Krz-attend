@@ -1,0 +1,62 @@
+# Never in Git (as for the image builds, see .dockerignore): secrets, runtime data, build output and caches.
+
+# Secrets: typed by the user on each machine (deploy/.env.example and users.acl.template are the templates)
+.env
+.env.*
+!.env.example
+deploy/redis/users.acl
+
+# Runtime data: face crops, uploads, backups, models, Redis, spool and logs stay on the machine
+/data/
+
+# Dependencies and build output
+node_modules/
+/backend/target/
+/backend/target-*/
+/frontend/dist/
+frontend/tsconfig.tsbuildinfo
+# Copied from node_modules and downloaded by `npm run mediapipe` (predev, prebuild)
+frontend/public/mediapipe/
+
+# Test output
+frontend/test-results/
+frontend/playwright-report/
+frontend/test/parity/diff/
+
+# Python
+.venv/
+__pycache__/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Machine-specific reports and local tool settings
+database/bootstrap/check-report.txt
+/.claude/
+*.log
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Kept on the development machine only, not needed to build or run (the owner's choice): the build prompts, the agent
+# instructions, the project notes and specification, and the tests. docs/api/openapi.json and docs/test-vectors stay:
+# the web build and the backend image read them.
+/AGENT.md
+/CLAUDE.md
+/docs/*
+!/docs/api/
+!/docs/test-vectors/
+/database/ERD.md
+/database/README.md
+/backend/src/test/
+/worker/tests/
+/worker/models/MODELS.md
+/worker/scripts/replay_video.py
+/frontend/test/
+/frontend/playwright.config.ts
+/frontend/playwright.smoke.config.ts
+/frontend/eslint.config.js
+/frontend/.prettierrc
+/frontend/.prettierignore

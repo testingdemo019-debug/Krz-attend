@@ -1,0 +1,8 @@
+/* Feed — the prototype's CSS (docs/prototype/index.html), values unchanged. */
+.feed{display:flex;flex-direction:column}
+.feed-item{display:flex;align-items:center;gap:11px;padding:9px 16px;border-bottom:1px solid var(--border);cursor:pointer;background:transparent;border-left:0;border-right:0;border-top:0;width:100%;text-align:left}
+.feed-item:hover{background:var(--surface-2)}
+.feed-item:last-child{border-bottom:0}
+.feed-item.new{animation:flash 1.6s ease}
+.feed-meta{font-size:12px;color:var(--text-3)}
+@keyframes flash{0%{background:var(--accent-weak)}100%{background:transparent}}

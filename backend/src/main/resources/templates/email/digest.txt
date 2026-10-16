@@ -1,0 +1,14 @@
+KRZ Attend · [(${orgName})]
+
+Hello [(${recipientName})],
+
+[(${count == 1 ? 'Here is your notification since the last digest.' : 'Here are your ' + count + ' notifications since the last digest.'})]
+[# th:each="item : ${items}"]
+- [(${item.title})]
+  [(${item.time})] · [(${item.rule})]
+[/][# th:if="${link != null}"]
+Open KRZ Attend: [(${link})]
+[/]
+--
+Change notifications in Settings → Notifications: [(${notificationsUrl})]
+This mailbox is not monitored.

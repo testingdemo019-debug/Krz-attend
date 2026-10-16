@@ -1,0 +1,4 @@
+/* Settings · Recognition: the sliders and, beside them, the impact preview and the profiles (the prototype's inline
+   grid). Below 760 px they stack, so the page never overflows sideways (F6.6; the prototype's did on phones). */
+.rec-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,400px);gap:24px;align-items:start}
+@media (max-width:760px){.rec-grid{grid-template-columns:minmax(0,1fr)}}

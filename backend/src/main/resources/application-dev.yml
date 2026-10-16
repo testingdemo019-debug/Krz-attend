@@ -1,0 +1,44 @@
+# Development on the host: `./mvnw spring-boot:run -Dspring-boot.run.profiles=dev` from backend/.
+# Reads the same deploy/.env as Docker Compose; PostgreSQL and Redis are reached on localhost.
+spring:
+  config:
+    import: optional:file:../deploy/.env[.properties]
+  datasource:
+    url: jdbc:postgresql://localhost:${DB_PORT:5432}/${DB_NAME:krz_attend}?ApplicationName=krz-attend-backend
+  flyway:
+    # The dev seed (sample organisation) is loaded only here.
+    locations: classpath:db/migration,classpath:db/seed/reference,classpath:db/seed/dev
+  data:
+    redis:
+      host: localhost
+
+krz:
+  app:
+    data-dir: ${DATA_DIR:../data}
+  # deploy/.env holds the container URLs; on the host the worker and go2rtc are published on localhost only.
+  worker:
+    url: http://localhost:8090
+  media-relay:
+    url: http://localhost:1984
+  # DevCameraBootstrap: CAM-01 at VLR / its first entry point when no camera exists (CAMERA_01_* are dev-only).
+  dev:
+    camera-seed: ${DEV_CAMERA_SEED:false}
+    # DevSyntheticCrossingJob: one synthetic crossing every 20 s through the real pipeline.
+    synthetic-crossings: ${DEV_SYNTHETIC_CROSSINGS:false}
+    camera-01:
+      host: ${CAMERA_01_HOST:}
+      rtsp-port: ${CAMERA_01_RTSP_PORT:554}
+      onvif-port: ${CAMERA_01_ONVIF_PORT:80}
+      main-path: ${CAMERA_01_MAIN_PATH:}
+      sub-path: ${CAMERA_01_SUB_PATH:}
+      username: ${CAMERA_01_USERNAME:}
+      password: ${CAMERA_01_PASSWORD:}
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+    # "Try it out" sends the XSRF-TOKEN cookie back as X-XSRF-TOKEN, like the SPA.
+    csrf:
+      enabled: true

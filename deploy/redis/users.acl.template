@@ -1,0 +1,4 @@
+user default off
+user krz_backend on >${REDIS_BACKEND_PASSWORD} ~krz:* &krz:* &krz:overlay:* &krz:session:event:0:created:* &__keyevent@0__:del &__keyevent@0__:expired +@all -@dangerous +info -flushall -flushdb -keys -config -debug -shutdown
+user krz_worker on >${REDIS_WORKER_PASSWORD} ~krz:crossings ~krz:hb:* ~krz:reid:* ~krz:unknown:* &krz:overlay:* &krz:config +ping +hello +auth +xadd +publish +subscribe +set +get +del +expire +expireat +hset +hget +hgetall +hdel +incr +lpush +ltrim +lrange +exists +client|setname
+user krz_health on >${REDIS_HEALTH_PASSWORD} -@all +ping +auth +hello

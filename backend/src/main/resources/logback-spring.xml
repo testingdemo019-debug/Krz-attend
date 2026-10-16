@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Logging: readable lines in development, JSON lines in production (stdout + data/logs/backend, daily, 30 days, 1 GB cap).
+  Every line carries traceId (and userId when signed in). MaskingEncoder masks anything that looks like a secret.
+  Never log names, e-mail addresses, embeddings or images (use internal IDs and codes).
+-->
+<configuration>
+  <springProperty name="DATA_DIR" source="krz.app.data-dir" defaultValue="../data"/>
+  <property name="LOG_DIR" value="${DATA_DIR}/logs/backend"/>
+  <property name="READABLE" value="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%X{traceId:-}] [%X{userId:-}] %logger{36} - %msg%n%ex"/>
+
+  <springProfile name="!prod">
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+      <encoder class="com.krztechnologies.attend.common.logging.MaskingEncoder">
+        <delegate class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+          <pattern>${READABLE}</pattern>
+          <charset>UTF-8</charset>
+        </delegate>
+      </encoder>
+    </appender>
+    <root level="INFO">
+      <appender-ref ref="CONSOLE"/>
+    </root>
+  </springProfile>
+
+  <springProfile name="prod">
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+      <encoder class="com.krztechnologies.attend.common.logging.MaskingEncoder">
+        <delegate class="org.springframework.boot.logging.logback.StructuredLogEncoder">
+          <format>logstash</format>
+          <charset>UTF-8</charset>
+        </delegate>
+      </encoder>
+    </appender>
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+      <file>${LOG_DIR}/backend.log</file>
+      <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+        <fileNamePattern>${LOG_DIR}/backend.%d{yyyy-MM-dd}.log.gz</fileNamePattern>
+        <maxHistory>30</maxHistory>
+        <totalSizeCap>1GB</totalSizeCap>
+      </rollingPolicy>
+      <encoder class="com.krztechnologies.attend.common.logging.MaskingEncoder">
+        <delegate class="org.springframework.boot.logging.logback.StructuredLogEncoder">
+          <format>logstash</format>
+          <charset>UTF-8</charset>
+        </delegate>
+      </encoder>
+    </appender>
+    <root level="INFO">
+      <appender-ref ref="CONSOLE"/>
+      <appender-ref ref="FILE"/>
+    </root>
+  </springProfile>
+</configuration>

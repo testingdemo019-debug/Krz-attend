@@ -1,0 +1,5 @@
+/* MultiSelect — the prototype's CSS (docs/prototype/index.html), values unchanged. */
+.msel-list{overflow:auto;border:1px solid var(--border);border-radius:var(--radius);padding:4px}
+.msel-row{display:flex;align-items:flex-start;gap:10px;padding:7px 8px;border-radius:6px;cursor:pointer;font-size:13.5px}
+.msel-row:hover{background:var(--surface-3)}
+.msel-row input{margin-top:3px}

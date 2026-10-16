@@ -1,0 +1,2 @@
+/* Kbd — the prototype's CSS (docs/prototype/index.html), values unchanged. */
+.kbd{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 5px;font-size:11px;font-family:var(--mono);border:1px solid var(--border-strong);border-bottom-width:2px;border-radius:4px;color:var(--text-2);background:var(--surface)}

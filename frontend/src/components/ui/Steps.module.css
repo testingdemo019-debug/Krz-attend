@@ -1,0 +1,7 @@
+/* Steps — the prototype's wizard steps (docs/prototype/index.html), values unchanged. */
+.stepper{display:flex;flex-direction:column;gap:2px}
+@media (max-width:900px){.stepper{flex-direction:row;overflow-x:auto;gap:4px}.stepper .st-label{display:none}}
+.st{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;color:var(--text-3);font-weight:550;font-size:13.5px}
+.st .st-n{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;border:2px solid var(--border-strong);font-size:12px;font-weight:700;flex:none;background:var(--surface)}
+.st.done{color:var(--text-2)} .st.done .st-n{background:var(--green-line);border-color:var(--green-line);color:#fff}
+.st.now{color:var(--accent-text);background:var(--accent-weak)} .st.now .st-n{border-color:var(--accent);color:var(--accent-text)}

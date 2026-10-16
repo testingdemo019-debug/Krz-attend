@@ -1,0 +1,12 @@
+/* Popover and Menu — the prototype's CSS (docs/prototype/index.html), values unchanged. */
+.popover{position:fixed;z-index:120;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-3);min-width:200px;max-width:360px;max-height:70vh;overflow:auto;padding:6px;animation:fade .1s ease}
+.menu-item{display:flex;align-items:center;gap:9px;width:100%;padding:8px 10px;border:0;background:none;border-radius:6px;cursor:pointer;text-align:left;color:var(--text);font-size:13.5px;text-decoration:none}
+.menu-item:hover,.menu-item:focus-visible{background:var(--surface-3);text-decoration:none}
+.menu-item.danger{color:var(--red)}
+.menu-item[disabled]{opacity:.5;cursor:not-allowed}
+.menu-sep{height:1px;background:var(--border);margin:6px 2px}
+.menu-label{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--text-3);padding:8px 10px 4px;font-weight:600}
+/* Radix places the popover through a fixed, moved wrapper that it sizes from the content: the prototype's position:fixed
+   took the content out of that wrapper, so Radix aligned an empty box (a right-aligned menu ran off the window). F6.6:
+   never wider than the window (8 px each side), whatever the content asks for. */
+.popover{position:relative;max-width:min(360px,calc(100vw - 16px))}

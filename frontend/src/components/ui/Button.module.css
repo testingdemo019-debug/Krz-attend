@@ -1,0 +1,22 @@
+/* Button and IconButton — the prototype's CSS (docs/prototype/index.html), values unchanged. */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;height:34px;padding:0 13px;border-radius:var(--radius-sm);border:1px solid var(--border-strong);background:var(--surface);color:var(--text);font-weight:550;font-size:13.5px;cursor:pointer;white-space:nowrap;transition:background .12s,border-color .12s,box-shadow .12s;text-decoration:none;position:relative}
+.btn:hover{background:var(--surface-3);text-decoration:none}
+.btn:active{transform:translateY(.5px)}
+.btn-primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.btn-primary:hover{background:var(--accent-hover);border-color:var(--accent-hover)}
+.btn-danger{background:var(--red-line);border-color:var(--red-line);color:#fff}
+html[data-theme="dark"] .btn-danger{color:#1a0b09}
+.btn-danger:hover{filter:brightness(.94);background:var(--red-line)}
+.btn-ghost{background:transparent;border-color:transparent}
+.btn-ghost:hover{background:var(--surface-3)}
+.btn-sm{height:28px;padding:0 9px;font-size:12.5px;gap:5px}
+.btn-lg{height:42px;padding:0 18px;font-size:15px}
+.btn[disabled],.btn.disabled{opacity:.48;cursor:not-allowed;pointer-events:auto}
+.btn[disabled]:hover{background:inherit}
+.btn-primary[disabled]:hover{background:var(--accent)}
+.icon-btn{display:inline-grid;place-items:center;width:34px;height:34px;border-radius:var(--radius-sm);border:1px solid transparent;background:transparent;color:var(--text-2);cursor:pointer;position:relative;flex:none}
+.icon-btn:hover{background:var(--surface-3);color:var(--text)}
+.icon-btn.sm{width:28px;height:28px}
+.icon-btn.bordered{border-color:var(--border-strong);background:var(--surface)}
+.icon-btn.active{background:var(--accent-weak);color:var(--accent-text)}
+.icon-btn .badge{position:absolute;top:1px;right:0;transform:translate(25%,-15%)}

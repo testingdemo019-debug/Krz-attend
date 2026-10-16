@@ -1,0 +1,11 @@
+# Development overrides: ports are published on 127.0.0.1 only, for the backend, worker and Vite running on the host.
+services:
+  redis:
+    ports:
+      - "127.0.0.1:6379:6379"
+  worker:
+    ports:
+      - "127.0.0.1:8090:8090"
+  media-relay:
+    ports:
+      - "127.0.0.1:1984:1984"

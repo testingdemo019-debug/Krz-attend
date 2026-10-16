@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Triaged OWASP dependency-check findings. Every suppression needs a reason, a date and an entry in
+  docs/SECURITY.md ("Triaged dependency findings"). Empty until the first scan.
+-->
+<suppressions xmlns="https://jeremylong.github.io/DependencyCheck/dependency-suppression.1.3.xsd"/>

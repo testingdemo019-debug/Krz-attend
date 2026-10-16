@@ -1,0 +1,20 @@
+# go2rtc (media relay): the API only, behind basic auth. No streams here: the backend registers each enabled camera's
+# sub stream through the API (MediaRelayReconciler). The credentials come from the container environment, so this
+# file holds no secret; it is copied into the tmpfs at start, so nothing go2rtc writes back persists.
+api:
+  listen: ":1984"
+  username: ${GO2RTC_API_USER}
+  password: ${GO2RTC_API_PASSWORD}
+  # Ask for the password from every address, the container's own included.
+  local_auth: true
+
+# Browsers get video only as MSE over the API's WebSocket; the other listeners are off.
+rtsp:
+  listen: ""
+webrtc:
+  listen: ""
+srtp:
+  listen: ""
+
+log:
+  level: info

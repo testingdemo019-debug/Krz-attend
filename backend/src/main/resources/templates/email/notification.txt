@@ -1,0 +1,13 @@
+KRZ Attend · [(${orgName})]
+
+Hello [(${recipientName})],
+
+[(${title})]
+[# th:if="${body != null}"][(${body})]
+[/][# th:if="${link != null}"]
+Open in KRZ Attend: [(${link})]
+[/]
+--
+You receive this because of the notification rule "[(${ruleLabel})]".
+Change notifications in Settings → Notifications: [(${notificationsUrl})]
+This mailbox is not monitored.

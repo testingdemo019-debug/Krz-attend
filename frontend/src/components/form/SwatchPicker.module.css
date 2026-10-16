@@ -1,0 +1,5 @@
+/* SwatchPicker — the prototype's CSS (docs/prototype/index.html), values unchanged. */
+.swatch-pick{position:relative;cursor:pointer}
+.swatch-pick input{position:absolute;opacity:0;width:22px;height:22px;margin:0;cursor:pointer}
+.swatch-pick input:checked+.sw{outline:2px solid var(--text);outline-offset:2px}
+.swatch-pick input:focus-visible+.sw{outline:2px solid var(--focus);outline-offset:2px}

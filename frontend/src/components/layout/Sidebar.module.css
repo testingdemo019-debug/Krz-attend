@@ -1,0 +1,36 @@
+/* Sidebar — the prototype's CSS (docs/prototype/index.html), values unchanged. */
+.sidebar{position:sticky;top:0;height:100vh;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;z-index:20}
+.brand{height:var(--topbar-h);display:flex;align-items:center;gap:10px;padding:0 16px;border-bottom:1px solid var(--border);flex:none}
+.brand-logo{width:30px;height:30px;border-radius:8px;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;font-weight:700;font-size:13px;flex:none;overflow:hidden}
+.brand-logo img{width:100%;height:100%;object-fit:cover}
+/* A logo is shown whole on white in both themes: an uploaded one (square or wide), or the KRZ Technologies mark
+   (the wordmark; the "K" alone when the sidebar is collapsed). */
+.brand-logo.logo,.brand-logo.krz{width:auto;background:#fff;border:1px solid var(--border)}
+.brand-logo.logo img{width:auto;max-width:96px;object-fit:contain}
+.brand-logo.krz{padding:0 6px}
+.brand-logo.krz img{width:auto;height:58%;object-fit:contain}
+.brand-logo.krz .krz-k{display:none}
+/* Square in a narrow sidebar: collapsed, or below 900 px where the shell narrows it (AppShell). */
+.shell.collapsed .brand-logo.logo,.shell.collapsed .brand-logo.krz{width:30px;padding:0}
+.shell.collapsed .brand-logo.logo img{max-width:100%}
+.shell.collapsed .brand-logo.krz .krz-word{display:none}
+.shell.collapsed .brand-logo.krz .krz-k{display:block}
+@media (max-width:900px){
+  .shell .brand-logo.logo,.shell .brand-logo.krz{width:30px;padding:0}
+  .shell .brand-logo.logo img{max-width:100%}
+  .shell .brand-logo.krz .krz-word{display:none}
+  .shell .brand-logo.krz .krz-k{display:block}
+}
+.brand-name{font-weight:650;font-size:15px;white-space:nowrap}
+.brand-sub{font-size:11px;color:var(--text-3);white-space:nowrap}
+.nav{flex:1;overflow-y:auto;padding:10px 8px 16px}
+.nav-section{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text-3);padding:14px 10px 6px;white-space:nowrap}
+.nav-item{display:flex;align-items:center;gap:11px;padding:8px 10px;border-radius:var(--radius-sm);color:var(--text-2);cursor:pointer;white-space:nowrap;text-decoration:none;position:relative;border:0;background:none;width:100%;text-align:left}
+.nav-item:hover{background:var(--surface-3);color:var(--text);text-decoration:none}
+.nav-item.active{background:var(--accent-weak);color:var(--accent-text);font-weight:600}
+.nav-item .badge{margin-left:auto}
+.shell.collapsed .nav-section,.shell.collapsed .nav-label,.shell.collapsed .brand-text,.shell.collapsed .nav-item .badge{display:none}
+.shell.collapsed .nav-item{justify-content:center;padding:9px}
+.shell.collapsed .nav-item .dot-badge{display:block}
+.dot-badge{display:none;position:absolute;top:6px;right:10px;width:8px;height:8px;border-radius:50%;background:var(--red-line)}
+.sidebar-foot{border-top:1px solid var(--border);padding:8px}

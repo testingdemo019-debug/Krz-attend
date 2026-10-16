@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title th:text="${subject}">Notification</title>
+</head>
+<body style="margin:0;padding:24px;background:#f4f5f7">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0"
+       style="max-width:600px;margin:0 auto;background:#ffffff;border:1px solid #e1e4e9;border-radius:8px">
+  <tr><td><table th:replace="~{fragments :: header}"></table></td></tr>
+  <tr>
+    <td style="padding:24px;color:#1a1d21;font-family:Inter,Segoe UI,Arial,sans-serif;font-size:14px;line-height:1.6">
+      <p style="margin:0 0 12px" th:text="'Hello ' + ${recipientName} + ','">Hello,</p>
+      <p style="margin:0 0 8px;font-size:16px;font-weight:650" th:text="${title}">Title</p>
+      <p style="margin:0 0 16px;color:#454c57" th:if="${body != null}" th:text="${body}">Body</p>
+      <p style="margin:0" th:if="${link != null}">
+        <a th:href="${link}" style="display:inline-block;background:#1d4ea3;color:#ffffff;text-decoration:none;padding:8px 14px;border-radius:6px;font-weight:600">Open in KRZ Attend</a>
+      </p>
+    </td>
+  </tr>
+  <tr><td><table th:replace="~{fragments :: footer(${ruleLabel})}"></table></td></tr>
+</table>
+</body>
+</html>

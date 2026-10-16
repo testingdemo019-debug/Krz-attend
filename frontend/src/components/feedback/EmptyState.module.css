@@ -1,0 +1,6 @@
+/* EmptyState and ErrorState — the prototype's CSS (docs/prototype/index.html), values unchanged. */
+.empty{padding:44px 20px;text-align:center;color:var(--text-2)}
+.empty .empty-ic{width:52px;height:52px;border-radius:50%;background:var(--surface-3);display:grid;place-items:center;margin:0 auto 12px;color:var(--text-3)}
+.empty h3{margin-bottom:4px;color:var(--text)}
+.empty p{max-width:440px;margin:0 auto 14px;font-size:13px}
+.error-state .empty-ic{background:var(--red-bg);color:var(--red)}

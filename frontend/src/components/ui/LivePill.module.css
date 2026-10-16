@@ -1,0 +1,6 @@
+/* LivePill — the prototype's CSS (docs/prototype/index.html), values unchanged; no demo state. */
+.lpill{display:inline-flex;align-items:center;gap:5px;height:20px;padding:0 7px;border-radius:999px;font-size:11px;font-weight:700}
+.lpill.live{background:#12301f;color:#5fd394} .lpill.rec{background:#33260f;color:#f3b25a} .lpill.off{background:#3a1714;color:#ff8a80} .lpill.conn{background:#262c35;color:#a8b0bc}
+.lpill .d{width:6px;height:6px;border-radius:50%;background:currentColor}
+.lpill.live .d{animation:pulse 1.6s infinite}
+@keyframes pulse{50%{opacity:.35}}

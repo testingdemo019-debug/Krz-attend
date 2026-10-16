@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<body>
+<!-- Shared header and footer of every KRZ Attend e-mail (colours from the prototype's tokens). -->
+<table th:fragment="header" role="presentation" width="100%" cellpadding="0" cellspacing="0"
+       style="background:#1d4ea3;border-radius:8px 8px 0 0">
+  <tr>
+    <td style="padding:16px 24px;color:#ffffff;font-family:Inter,Segoe UI,Arial,sans-serif;font-size:16px;font-weight:650">
+      KRZ Attend <span style="font-weight:400;opacity:.85" th:text="'· ' + ${orgName}">· Organisation</span>
+    </td>
+  </tr>
+</table>
+<table th:fragment="footer(ruleLabel)" role="presentation" width="100%" cellpadding="0" cellspacing="0">
+  <tr>
+    <td style="padding:16px 24px;color:#646c78;font-family:Inter,Segoe UI,Arial,sans-serif;font-size:12px;line-height:1.5;border-top:1px solid #e1e4e9">
+      <span th:if="${ruleLabel != null}">You receive this because of the notification rule
+        “<span th:text="${ruleLabel}">rule</span>”. </span>
+      Change notifications in <a th:href="${notificationsUrl}" style="color:#1d4ea3">Settings → Notifications</a>.
+      This mailbox is not monitored.
+    </td>
+  </tr>
+</table>
+</body>
+</html>

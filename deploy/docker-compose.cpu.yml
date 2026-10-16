@@ -1,0 +1,12 @@
+# Worker without a GPU (development machines): the CPU image (onnxruntime) and no GPU reservation. Slow (a few
+# frames per second) but complete. Added by deploy/scripts/up --cpu:
+#   docker compose -f deploy/docker-compose.yml [-f deploy/docker-compose.dev.yml] -f deploy/docker-compose.cpu.yml up -d worker
+services:
+  worker:
+    image: krz-attend-worker:${APP_VERSION:?set APP_VERSION in deploy/.env}-cpu
+    build:
+      args:
+        RUNTIME: cpu
+    environment:
+      WORKER_EXECUTION_PROVIDER: cpu
+    deploy: !reset {}

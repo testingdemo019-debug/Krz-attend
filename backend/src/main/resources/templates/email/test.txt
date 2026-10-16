@@ -1,0 +1,11 @@
+KRZ Attend · [(${orgName})]
+
+Hello [(${recipientName})],
+
+This is a test e-mail from KRZ Attend. E-mail notifications are working.
+[# th:if="${link != null}"]
+Notification settings: [(${link})]
+[/]
+--
+Change notifications in Settings → Notifications: [(${notificationsUrl})]
+This mailbox is not monitored.

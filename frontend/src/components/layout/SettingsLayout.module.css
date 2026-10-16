@@ -1,0 +1,13 @@
+/* SettingsLayout — the prototype's CSS (docs/prototype/index.html), values unchanged. */
+.settings{display:grid;grid-template-columns:230px minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:900px){.settings{grid-template-columns:1fr}}
+.subnav{position:sticky;top:calc(var(--topbar-h) + 16px);display:flex;flex-direction:column;gap:1px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:6px}
+.subnav a{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:6px;color:var(--text-2);font-size:13.5px;text-decoration:none}
+.subnav a:hover{background:var(--surface-3);color:var(--text)}
+.subnav a.active{background:var(--accent-weak);color:var(--accent-text);font-weight:600}
+.subnav a.locked{opacity:.5}
+.set-section{padding:18px 0;border-bottom:1px solid var(--border)}
+.set-section:first-child{padding-top:4px}
+.set-section:last-child{border-bottom:0}
+.set-section>h3{margin-bottom:4px}
+.set-section>.help{margin-bottom:12px}

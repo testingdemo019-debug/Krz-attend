@@ -1,0 +1,139 @@
+# KRZ Attend — production baseline (runtime topology, Part A). PostgreSQL is NOT a service: it runs on the host.
+# Services are added here as each part is built (backend and web follow in Phase 6).
+# Start through deploy/scripts/up, which first renders redis/users.acl from deploy/.env and creates the data folders.
+name: krz-attend
+
+x-hardening: &hardening
+  read_only: true
+  tmpfs:
+    - /tmp
+  security_opt:
+    - no-new-privileges:true
+  cap_drop:
+    - ALL
+  restart: unless-stopped
+  user: "10001:${DEPLOY_GID:-1000}"
+  logging:
+    driver: json-file
+    options:
+      max-size: "20m"
+      max-file: "5"
+
+services:
+  redis:
+    <<: *hardening
+    image: redis:8.10.2-alpine
+    command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
+    mem_limit: 1536m
+    environment:
+      # The health check authenticates as the PING-only user.
+      REDISCLI_AUTH: ${REDIS_HEALTH_PASSWORD}
+    volumes:
+      - ./redis/redis.conf:/usr/local/etc/redis/redis.conf:ro
+      - ./redis/users.acl:/usr/local/etc/redis/users.acl:ro
+      - ${DATA_DIR:-../data}/redis:/data
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli --no-auth-warning --user krz_health ping | grep -q PONG"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+    networks:
+      - internal
+
+  media-relay:
+    <<: *hardening
+    image: alexxit/go2rtc:1.9.9
+    # The config is copied into the tmpfs, so streams added through the API (with their RTSP credentials) never reach
+    # a disk (P-22); go2rtc fills the credentials in from the environment.
+    entrypoint: ["/bin/sh", "-c", "cp /etc/go2rtc/go2rtc.yaml /tmp/go2rtc.yaml && exec go2rtc -config /tmp/go2rtc.yaml"]
+    mem_limit: 512m
+    environment:
+      GO2RTC_API_USER: ${GO2RTC_API_USER:-krz_relay}
+      GO2RTC_API_PASSWORD: ${GO2RTC_API_PASSWORD:?run deploy/scripts/init-env}
+    volumes:
+      - ./go2rtc/go2rtc.yaml:/etc/go2rtc/go2rtc.yaml:ro
+    healthcheck:
+      # Any HTTP answer (401 without credentials) means the API is up.
+      test: ["CMD-SHELL", "wget -S -O /dev/null http://127.0.0.1:1984/api 2>&1 | grep -q 'HTTP/'"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+    networks:
+      - internal
+
+  worker:
+    <<: *hardening
+    image: krz-attend-worker:${APP_VERSION:?set APP_VERSION in deploy/.env}
+    build:
+      context: ..
+      dockerfile: worker/Dockerfile
+      args:
+        RUNTIME: gpu
+    mem_limit: 4g
+    # Time to release held U-turn crossings and finish writing the spool (SIGTERM).
+    stop_grace_period: 20s
+    # The backend starts first once it joins this file (Phase 6); the worker waits for the database views itself.
+    depends_on:
+      redis:
+        condition: service_healthy
+    extra_hosts:
+      - "host.docker.internal:${DOCKER_HOST_GATEWAY:-172.28.0.1}"
+    # Only what the worker reads (krz_worker/config.py and the key ring), never the whole .env.
+    environment:
+      APP_VERSION: ${APP_VERSION}
+      DATA_DIR: /data
+      MODELS_DIR: /models
+      TRT_CACHE_DIR: /data/trt_cache
+      WORKER_ID: ${WORKER_ID:-worker-1}
+      WORKER_EXECUTION_PROVIDER: ${WORKER_EXECUTION_PROVIDER:-cuda}
+      WORKER_GPU_DEVICE: ${WORKER_GPU_DEVICE:-0}
+      WORKER_MAX_FPS: ${WORKER_MAX_FPS:-12}
+      WORKER_API_PORT: ${WORKER_API_PORT:-8090}
+      WORKER_API_TOKEN: ${WORKER_API_TOKEN:?run deploy/scripts/init-env}
+      CAMERA_DISCOVERY_SUBNET: ${CAMERA_DISCOVERY_SUBNET:-192.168.1.0/24}
+      DB_HOST: host.docker.internal
+      DB_PORT: ${DB_PORT:-5432}
+      DB_NAME: ${DB_NAME:-krz_attend}
+      DB_WORKER_USER: ${DB_WORKER_USER:-krz_worker}
+      DB_WORKER_PASSWORD: ${DB_WORKER_PASSWORD:?run deploy/scripts/init-env}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_WORKER_USER: ${REDIS_WORKER_USER:-krz_worker}
+      REDIS_WORKER_PASSWORD: ${REDIS_WORKER_PASSWORD:?run deploy/scripts/init-env}
+      # The crop key ring. A key rotation (RUNBOOK) adds the new ENCRYPTION_KEY_<ID> here and to the backend.
+      ENCRYPTION_ACTIVE_KEY_ID: ${ENCRYPTION_ACTIVE_KEY_ID:-k1}
+      ENCRYPTION_KEY_k1: ${ENCRYPTION_KEY_k1:?run deploy/scripts/init-env}
+    volumes:
+      - ${DATA_DIR:-../data}/crops:/data/crops
+      - ${DATA_DIR:-../data}/spool:/data/spool
+      - ${DATA_DIR:-../data}/trt_cache:/data/trt_cache
+      - ${DATA_DIR:-../data}/logs/worker:/data/logs/worker
+      - ${DATA_DIR:-../data}/models:/models:ro
+    # One NVIDIA GPU (NVIDIA Container Toolkit on Ubuntu, WSL2 GPU support in Docker Desktop). Without a GPU, add
+    # docker-compose.cpu.yml (deploy/scripts/up --cpu).
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    networks:
+      - internal
+
+networks:
+  # Fixed subnet so pg_hba.conf can allow exactly 172.28.0.0/24; the host interface is named krz-int for ufw.
+  # Not "internal: true": the backend needs Microsoft Graph and the worker and media relay need the camera.
+  internal:
+    driver: bridge
+    driver_opts:
+      com.docker.network.bridge.name: krz-int
+    ipam:
+      config:
+        - subnet: 172.28.0.0/24
+          gateway: 172.28.0.1
+  # Only "web" (nginx) will publish ports 80/443.
+  edge:
+    driver: bridge

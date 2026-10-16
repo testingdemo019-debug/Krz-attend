@@ -1,0 +1,5 @@
+/* StatStrip — the prototype's CSS (docs/prototype/index.html), values unchanged. */
+.stat-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
+.stat{background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px}
+.stat .v{font-size:20px;font-weight:650;font-variant-numeric:tabular-nums}
+.stat .l{font-size:12px;color:var(--text-3)}

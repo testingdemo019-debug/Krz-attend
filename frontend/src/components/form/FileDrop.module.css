@@ -1,0 +1,3 @@
+/* FileDrop — the prototype's CSS (docs/prototype/index.html), values unchanged. */
+.dropzone{border:2px dashed var(--border-strong);border-radius:var(--radius-lg);padding:26px;text-align:center;color:var(--text-2);background:var(--surface-2);cursor:pointer;transition:border-color .15s,background .15s}
+.dropzone:hover,.dropzone.over{border-color:var(--accent);background:var(--accent-weak)}
