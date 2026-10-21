@@ -7,8 +7,9 @@ before it is sent. Direction modes are not applied here: every crossing is sent 
 mode, so the rule lives in one place. During a calibration run crossings go to the run instead of the stream.
 
 ``process`` does the work of one frame and returns what it emitted, so tests and replay_video.py drive it directly;
-``run`` paces it at WORKER_MAX_FPS on a live source, writes the heartbeat and survives per-frame errors (30 in a row
-end the pipeline, and the supervisor restarts it).
+``run`` analyses at most WORKER_MAX_FPS pictures a second of a live source, counted on their arrival times
+(``pacing.FrameBudget``, no sleeping), writes the heartbeat and survives per-frame errors (30 in a row end the
+pipeline, and the supervisor restarts it).
 """
 
 from __future__ import annotations
@@ -32,6 +33,7 @@ from krz_worker.pipeline import crops as crop_files
 from krz_worker.pipeline.calibration import CalibrationCrossing, Run
 from krz_worker.pipeline.crossing_builder import build, new_crossing_uid, new_trace_id
 from krz_worker.pipeline.overlays import OverlayTrack, Throttle, payload
+from krz_worker.pipeline.pacing import FrameBudget
 from krz_worker.recognition import quality as face_quality
 from krz_worker.recognition.decision import Evidence, Thresholds, Vote, decide, needs_reid
 from krz_worker.stream import onvif
@@ -351,16 +353,15 @@ class CameraPipeline:
     # --- live loop ----------------------------------------------------------------------------------------------
 
     def run(self, stop: threading.Event) -> None:
-        interval = 1.0 / self._ctx.settings.max_fps
+        budget = FrameBudget(self._ctx.settings.max_fps)
         errors = 0
         next_heartbeat = 0.0
         self._start_clock_watch(stop)
         self.source.start()
         try:
             while not stop.is_set():
-                started = time.monotonic()
                 frame = self.source.read(timeout=1.0)
-                if frame is not None:
+                if frame is not None and budget.take(frame.arrived):
                     try:
                         self.process(frame)
                         errors = 0
@@ -372,7 +373,6 @@ class CameraPipeline:
                 if self._heartbeat is not None and time.monotonic() >= next_heartbeat:
                     self._heartbeat(self.camera.code, self.heartbeat_payload(), 10)
                     next_heartbeat = time.monotonic() + CAMERA_HEARTBEAT_EVERY
-                stop.wait(max(0.0, interval - (time.monotonic() - started)))
         finally:
             self.flush()
             self.source.stop()

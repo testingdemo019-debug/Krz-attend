@@ -1,6 +1,7 @@
 # Used by every image build (build context = project root).
 # Secrets, runtime data and build output never enter a build context.
 **/.env*
+deploy/nginx/certs/
 data/
 **/node_modules
 **/target

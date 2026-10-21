@@ -5,6 +5,8 @@
 .env.*
 !.env.example
 deploy/redis/users.acl
+# The HTTPS certificate and its private key, mounted into nginx at runtime
+/deploy/nginx/certs/
 
 # Runtime data: face crops, uploads, backups, models, Redis, spool and logs stay on the machine
 /data/

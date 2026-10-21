@@ -25,8 +25,9 @@ powershell -ExecutionPolicy Bypass -File deploy\scripts\check-prereqs.ps1 --with
 ## 3. Secrets
 Either a **fresh system**: run `powershell -ExecutionPolicy Bypass -File deploy\scripts\init-env.ps1`, then open
 `deploy\.env` in a text editor and fill in `ENTRA_CLIENT_SECRET`, `ENTRA_CLIENT_SECRET_EXPIRES`,
-`BOOTSTRAP_ADMIN_EMAILS`, `MAIL_TEST_RECIPIENT`, `CAMERA_01_USERNAME`, `CAMERA_01_PASSWORD`, `DB_PORT` (if PostgreSQL
-is not on 5432) and `WORKER_MAX_FPS=20`.
+`BOOTSTRAP_ADMIN_EMAILS`, `MAIL_TEST_RECIPIENT` (the one address that receives every e-mail in this setup, see step 9),
+`CAMERA_01_USERNAME`, `CAMERA_01_PASSWORD`, `DB_PORT` (if PostgreSQL is not on 5432) and `WORKER_MAX_FPS=25` (the
+camera's frame rate; the worker reads it only when it starts).
 
 Or **the same data as another machine**: copy that machine's `deploy\.env` by hand (USB stick; never Git, e-mail or
 chat), restore its database backup (`database\scripts\restore.ps1`) and copy its `data\crops` and `data\uploads`. Its
@@ -85,6 +86,19 @@ powershell -ExecutionPolicy Bypass -File deploy\scripts\start-all.ps1
 ```
 After an update that changes `worker\pyproject.toml` or `frontend\package.json`, run the matching install line of step
 5 again first.
+
+## 9. E-mail
+- **Who receives it:** each notification rule's recipients in Settings, Notifications (roles, and single people who
+  have a role). The address is their work e-mail from Microsoft. Each e-mail names the rule and links to the page in
+  KRZ Attend and to the notification settings; it never contains a face picture.
+- **This setup** (`APP_ENV=dev`) sends **every** e-mail only to `MAIL_TEST_RECIPIENT`. Its subject starts with
+  `[DEV → address]`, the person it was meant for. Without that address nothing is sent. Links use `APP_BASE_URL`
+  (`http://localhost:5173`), so they open on this machine only.
+- **Real recipients** need the production setup: `APP_ENV=prod`, `MAIL_TEST_RECIPIENT` empty (the backend log warns
+  when one is left over), `APP_BASE_URL` set to the https address people open, and `MAIL_SENDER` a real mailbox. It runs
+  behind HTTPS, which Microsoft sign-in and the secure session cookie need from other PCs; it is not set up yet.
+- **Check:** Settings, Notifications, **Send test e-mail** sends one to your own work address (in this setup: to
+  `MAIL_TEST_RECIPIENT`).
 
 ## Notes
 - Only one machine should run the worker for a camera at a time, or both record every crossing in their own database.
