@@ -34,13 +34,55 @@ interface Pending {
   error: string | null;
 }
 
-/** The prototype's checkUploadImage crop: a square around the face (levelled by the eyes), or the photo's middle. */
-async function faceCrop(file: File): Promise<string | null> {
+/** The longest side sent: within the server's 4096 px and 4 MB, with room to spare for the face. */
+const SEND_SIDE = 2560;
+
+/** The photo as the browser shows it, turned upright by its EXIF orientation; null when it can't be read. */
+async function decode(file: File): Promise<HTMLImageElement | null> {
   const url = URL.createObjectURL(file);
   try {
     const img = new Image();
     img.src = url;
     await img.decode();
+    return img;
+  } catch {
+    return null;
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+/**
+ * What is sent (D-119): the upright photo, at most {@link SEND_SIDE} px, as a JPEG. A phone stores a portrait photo
+ * sideways with an EXIF "rotate" tag that the server's re-encode drops, so the server measured a turned face and
+ * refused a good photo; and phone photos are often over the server's 4 MB or 4096 px.
+ */
+async function upright(img: HTMLImageElement): Promise<Blob> {
+  const scale = Math.min(1, SEND_SIDE / Math.max(img.naturalWidth, img.naturalHeight));
+  const c = document.createElement('canvas');
+  c.width = Math.round(img.naturalWidth * scale);
+  c.height = Math.round(img.naturalHeight * scale);
+  const x = c.getContext('2d');
+  if (!x) throw new Error('Couldn’t read this image');
+  // A transparent PNG goes on white, as the server's own JPEG re-encode does.
+  x.fillStyle = '#fff';
+  x.fillRect(0, 0, c.width, c.height);
+  x.drawImage(img, 0, 0, c.width, c.height);
+  return new Promise((resolve, reject) => {
+    c.toBlob(
+      blob => {
+        if (blob) resolve(blob);
+        else reject(new Error('Couldn’t read this image'));
+      },
+      'image/jpeg',
+      0.92,
+    );
+  });
+}
+
+/** The prototype's checkUploadImage crop: a square around the face (levelled by the eyes), or the photo's middle. */
+async function faceCrop(img: HTMLImageElement): Promise<string | null> {
+  try {
     let box = { x0: 0.25, y0: 0.15, x1: 0.75, y1: 0.75 };
     let angle = 0;
     try {
@@ -80,8 +122,6 @@ async function faceCrop(file: File): Promise<string | null> {
     return c.toDataURL('image/jpeg', 0.85);
   } catch {
     return null;
-  } finally {
-    URL.revokeObjectURL(url);
   }
 }
 
@@ -127,10 +167,15 @@ export function UploadStep({
       const key = `${file.name}-${String(Math.random())}`;
       setPending(list => [...list, { key, name: file.name, crop: null, error: null }]);
       void (async () => {
-        const crop = await faceCrop(file);
+        const img = await decode(file);
+        if (!img) {
+          setPending(list => list.map(u => (u.key === key ? { ...u, error: 'Couldn’t read this image' } : u)));
+          return;
+        }
+        const crop = await faceCrop(img);
         setPending(list => list.map(u => (u.key === key ? { ...u, crop } : u)));
         try {
-          const result = await capture.mutateAsync({ code: session.code, image: file, pose: null });
+          const result = await capture.mutateAsync({ code: session.code, image: await upright(img), pose: null });
           onCaptured(result, crop ?? '', file.name);
           setPending(list => list.filter(u => u.key !== key));
         } catch (e) {

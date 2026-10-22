@@ -36,6 +36,19 @@ export function useCrossing(code: string | null) {
   });
 }
 
+/** The identified crossing's face crop becomes the employee's face template (D-118); the drawer shows the result. */
+export function useCrossingTemplate() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (code: string) =>
+      request<EventDetail>(`/crossings/${encodeURIComponent(code)}/template`, { method: 'POST' }),
+    onSuccess: detail => {
+      queryClient.setQueryData([...queryKeys.crossings, 'detail', detail.event.code], detail);
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: queryKeys.employees }),
+  });
+}
+
 /** The day before and after a correction (nothing is saved). */
 export function useCorrectionPreview(code: string, kind: CorrectionKind) {
   return useQuery({

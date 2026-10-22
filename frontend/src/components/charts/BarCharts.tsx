@@ -53,6 +53,10 @@ export function HBarChart({
   );
 }
 
+/** Gap before the stacked bar chart's share text, and a 12 px label's average character width in viewBox units. */
+const SHARE_GAP = 8;
+const CHAR_W = 6.8;
+
 export interface Segment {
   key: string;
   label: string;
@@ -69,9 +73,15 @@ export function StackedBarChart({
   const W = 760;
   const rowH = 30;
   const L = 130;
-  const R = 70;
   const H = items.length * rowH + 10;
   const first = segments[0];
+  const share = (values: Readonly<Record<string, number>>) => {
+    const total = segments.reduce((sum, s) => sum + (values[s.key] ?? 0), 0);
+    return `${String(total && first ? Math.round((100 * (values[first.key] ?? 0)) / total) : 0)}% ${first?.label.toLowerCase() ?? ''}`;
+  };
+  // The prototype keeps 70 units right of the bars for the share text, but "33% face (auto)" needs about 105, so the
+  // text was cut off at the card's edge (D-119). The bars give up the room the longest text needs.
+  const R = Math.max(70, SHARE_GAP + Math.ceil(Math.max(0, ...items.map(it => share(it.values).length)) * CHAR_W));
   return (
     <svg viewBox={`0 0 ${String(W)} ${String(H)}`} role="img" aria-label="Stacked bar chart">
       {items.map((it, i) => {
@@ -96,8 +106,8 @@ export function StackedBarChart({
               x += w;
               return rect;
             })}
-            <text x={W - R + 8} y={y + 15} fontSize="12" fill="var(--text-2)">
-              {total && first ? Math.round((100 * value(first.key)) / total) : 0}% {first?.label.toLowerCase()}
+            <text x={W - R + SHARE_GAP} y={y + 15} fontSize="12" fill="var(--text-2)">
+              {share(it.values)}
             </text>
           </g>
         );

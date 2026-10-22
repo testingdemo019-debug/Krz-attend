@@ -202,7 +202,30 @@ export const TEMPLATE_POSES = {
   TURN_RIGHT: 'Turn right',
   CHIN_DOWN: 'Chin down',
 } as const;
-export const TEMPLATE_SOURCES = { LIVE: 'live', UPLOAD: 'upload', REVIEW: 'from review' } as const;
+export const TEMPLATE_SOURCES = {
+  LIVE: 'live',
+  UPLOAD: 'upload',
+  REVIEW: 'from review',
+  CAMERA: 'entry camera',
+  CROSSING: 'from a crossing',
+} as const;
+/** The light a template from the attendance camera was taken in (D-118). */
+export const TEMPLATE_LIGHTS = { DAY: 'Day', EVENING: 'Evening', NIGHT_IR: 'Night (infrared)' } as const;
+/** Templates taken by the attendance camera itself: they show its angle and light. */
+export const CAMERA_TEMPLATE_SOURCES: readonly string[] = ['CAMERA', 'REVIEW', 'CROSSING'];
+/** Face-profile history actions (the profile's Activity tab). */
+export const PROFILE_HISTORY_ACTIONS = {
+  ENROLLED: 'Enrolled',
+  REENROLLED: 'Re-enrolled',
+  FLAGGED_REENROL: 'Flagged for re-enrolment',
+  DEACTIVATED: 'Face profile deactivated',
+  REACTIVATED: 'Face profile reactivated',
+  ERASED: 'Biometric data erased',
+  TEMPLATE_ADDED_FROM_REVIEW: 'Template added from review',
+  TEMPLATE_ADDED_FROM_CROSSING: 'Template added from a crossing',
+  ENROLMENT_DECLINED: 'Enrolment declined',
+  CONSENT_WITHDRAWN: 'Consent withdrawn',
+} as const;
 
 /** Why a face profile is deactivated or erased (the server accepts these; "Other" needs a note). */
 export const DEACTIVATE_REASONS = [

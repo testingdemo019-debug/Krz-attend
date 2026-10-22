@@ -267,6 +267,7 @@ public class EmployeeService {
                         t.pose(),
                         t.quality(),
                         t.source(),
+                        t.light(),
                         t.createdAt(),
                         sensitive && t.hasThumbnail() ? FaceProfileService.thumbnailUrl(id, t.id()) : null))
                 .toList();

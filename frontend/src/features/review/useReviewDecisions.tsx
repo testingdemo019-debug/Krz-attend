@@ -98,8 +98,8 @@ export function useReviewDecisions() {
         },
         onError: error => {
           if (error instanceof ApiError && error.code === 'TEMPLATE_NOT_ELIGIBLE' && request.addTemplate && who) {
-            // The prototype goes ahead without the template when the employee has no consent on file.
-            toast(`${firstName(who)} has no consent on file, so no template was added`, { type: 'warn' });
+            // As the prototype: the decision goes ahead without the template, saying why the server refused it.
+            toast(`No template was added for ${firstName(who)}: ${error.message}`, { type: 'warn', logged: true });
             run(item, { ...request, addTemplate: false }, who);
             return;
           }
@@ -260,7 +260,10 @@ function AssignDialog({
         }
         let template = addTemplate && eligibility.ok;
         if (template && employee.consentStatus !== 'GIVEN') {
-          toast(`${firstName(employee.name)} has no consent on file, so no template was added`, { type: 'warn' });
+          toast(
+            `${firstName(employee.name)} has no consent on file, so no template was added. Record consent in Enrolment, then add a template from this crossing in Events.`,
+            { type: 'warn', logged: true },
+          );
           template = false;
         }
         onAssign(

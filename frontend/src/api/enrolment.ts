@@ -15,7 +15,10 @@ export type CaptureResult = components['schemas']['EnrolmentViews.CaptureResult'
 export type DuplicateCheck = components['schemas']['EnrolmentViews.DuplicateCheck'];
 export type Completed = components['schemas']['EnrolmentViews.Completed'];
 export type TestResult = components['schemas']['EnrolmentViews.TestResult'];
-export type EnrolmentMethod = 'LIVE' | 'UPLOAD';
+export type CaptureCamera = components['schemas']['EnrolmentViews.CaptureCamera'];
+export type CaptureStatus = components['schemas']['EnrolmentViews.CaptureStatus'];
+/** LIVE (guided webcam), UPLOAD (photos) or CAMERA (capture at an entry point: the attendance camera, D-118). */
+export type EnrolmentMethod = 'LIVE' | 'UPLOAD' | 'CAMERA';
 export type ConsentMethod = 'WRITTEN_FORM' | 'EMAIL_CONFIRMATION';
 
 const sessionPath = (code: string, rest = '') => `/enrolment/sessions/${encodeURIComponent(code)}${rest}`;
@@ -142,6 +145,49 @@ export function useCompleteEnrolment() {
           queryClient.invalidateQueries({ queryKey: key }),
         ),
       ),
+  });
+}
+
+/** The enabled cameras a capture at an entry point can use. */
+export function useCaptureCameras(enabled: boolean) {
+  return useQuery({
+    queryKey: [...queryKeys.enrolment, 'cameras'],
+    queryFn: ({ signal }) => request<CaptureCamera[]>('/enrolment/cameras', { signal }),
+    enabled,
+  });
+}
+
+/** The camera's latest picture (never cached); {@code tick} makes each refresh a new image request. */
+export function cameraSnapshotUrl(cameraCode: string, tick: number): string {
+  return `/api/v1/enrolment/cameras/${encodeURIComponent(cameraCode)}/snapshot?t=${String(tick)}`;
+}
+
+/** A capture's image as the server stored it (the face crop of a capture at an entry point). */
+export function captureImageUrl(code: string, captureId: number): string {
+  return `/api/v1${sessionPath(code, `/captures/${String(captureId)}/image`)}`;
+}
+
+export function useStartCapture() {
+  return useMutation({
+    mutationFn: ({ code, cameraCode }: { code: string; cameraCode: string }) =>
+      request<CaptureStatus>(sessionPath(code, '/capture'), { method: 'POST', body: { cameraCode } }),
+  });
+}
+
+/** What the running capture holds, asked every second while it runs. */
+export function useCaptureStatus(code: string, running: boolean) {
+  return useQuery({
+    queryKey: [...queryKeys.enrolment, 'capture', code],
+    queryFn: ({ signal }) => request<CaptureStatus>(sessionPath(code, '/capture'), { signal }),
+    enabled: running,
+    refetchInterval: running ? 1000 : false,
+  });
+}
+
+/** Stops the capture: its samples become the session's captures. */
+export function useStopCapture() {
+  return useMutation({
+    mutationFn: (code: string) => request<EnrolmentSession>(sessionPath(code, '/capture/stop'), { method: 'POST' }),
   });
 }
 

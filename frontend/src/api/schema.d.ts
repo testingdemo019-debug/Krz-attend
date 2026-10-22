@@ -498,6 +498,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/crossings/{code}/template": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add the identified crossing's face crop as the employee's face template */
+        post: operations["addTemplate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/dashboard": {
         parameters: {
             query?: never;
@@ -910,6 +927,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/enrolment/cameras": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The enabled cameras a capture at an entry point can use */
+        get: operations["captureCameras"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/enrolment/cameras/{cameraCode}/snapshot": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The camera's latest picture while capturing at its entry point (never cached) */
+        get: operations["cameraSnapshot"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/enrolment/lockouts/{employeeId}/unlock": {
         parameters: {
             query?: never;
@@ -1029,6 +1080,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/enrolment/sessions/{code}/capture": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** What the capture at the entry point holds so far: angle groups and people in view */
+        get: operations["captureStatus"];
+        put?: never;
+        /** Start capturing the person's face at the camera of an entry point (method CAMERA) */
+        post: operations["startCapture"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/enrolment/sessions/{code}/capture/stop": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Stop the capture at the entry point; its samples become the session's captures */
+        post: operations["stopCapture"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/enrolment/sessions/{code}/captures": {
         parameters: {
             query?: never;
@@ -1058,6 +1144,23 @@ export interface paths {
         post?: never;
         /** Remove a capture */
         delete: operations["removeCapture"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/enrolment/sessions/{code}/captures/{captureId}/image": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A capture's image (never cached) */
+        get: operations["captureImage"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -3607,6 +3710,7 @@ export interface components {
             resolvedAt: string | null;
             resolvedBy: string | null;
             review: components["schemas"]["CrossingViews.ReviewRef"] | null;
+            template: components["schemas"]["CrossingViews.TemplateOffer"] | null;
             /** Format: int32 */
             trackId: number | null;
             voided: components["schemas"]["CrossingViews.Correction"] | null;
@@ -3667,6 +3771,10 @@ export interface components {
         "CrossingViews.ReviewRef": {
             code: string;
             status: string;
+        };
+        "CrossingViews.TemplateOffer": {
+            ok: boolean;
+            why: string;
         };
         "DashboardViews.Alert": {
             /** Format: date-time */
@@ -4049,6 +4157,7 @@ export interface components {
             createdAt: string;
             /** Format: int64 */
             id: number;
+            light: string | null;
             pose: string | null;
             /** Format: int32 */
             quality: number | null;
@@ -4060,6 +4169,11 @@ export interface components {
             changed: number;
             employee: components["schemas"]["EmployeeViews.Profile"];
         };
+        "EnrolmentController.CaptureStartRequest": {
+            cameraCode: string;
+            /** Format: int32 */
+            seconds: number | null;
+        };
         "EnrolmentController.CompleteRequest": {
             captureIds: number[];
             lookalikeConfirmed: boolean | null;
@@ -4070,7 +4184,7 @@ export interface components {
             /** Format: uuid */
             employeeId: string;
             /** @enum {string} */
-            method: "LIVE" | "UPLOAD";
+            method: "LIVE" | "UPLOAD" | "CAMERA";
         };
         EnrolmentSettings: {
             allowUpload: boolean;
@@ -4108,10 +4222,31 @@ export interface components {
             createdAt: string;
             /** Format: int64 */
             id: number;
+            light: string | null;
             livenessPassed: boolean | null;
             pose: string | null;
             quality: components["schemas"]["EnrolmentViews.Quality"] | null;
             rejectReason: string | null;
+        };
+        "EnrolmentViews.CaptureCamera": {
+            code: string;
+            entryPoint: string | null;
+            name: string;
+        };
+        "EnrolmentViews.CaptureGroup": {
+            group: string;
+            samples: components["schemas"]["EnrolmentViews.CaptureGroupSample"][];
+        };
+        "EnrolmentViews.CaptureGroupSample": {
+            /** Format: int32 */
+            eyePx: number | null;
+            light: string | null;
+            /** Format: double */
+            pitch: number | null;
+            /** Format: int32 */
+            score: number | null;
+            /** Format: double */
+            yaw: number | null;
         };
         "EnrolmentViews.CaptureResult": {
             capture: components["schemas"]["EnrolmentViews.Capture"];
@@ -4121,6 +4256,17 @@ export interface components {
             goodCaptures: number;
             /** Format: date-time */
             lockedUntil: string | null;
+        };
+        "EnrolmentViews.CaptureStatus": {
+            crowded: boolean;
+            groups: components["schemas"]["EnrolmentViews.CaptureGroup"][];
+            /** Format: int32 */
+            otherPerson: number;
+            /** Format: int32 */
+            people: number;
+            /** Format: int32 */
+            secondsLeft: number;
+            status: string;
         };
         "EnrolmentViews.Completed": {
             /** Format: int32 */
@@ -4193,6 +4339,7 @@ export interface components {
         "EnrolmentViews.Session": {
             /** Format: int32 */
             activeNotice: number;
+            cameraCode: string | null;
             captures: components["schemas"]["EnrolmentViews.Capture"][];
             code: string;
             consent: components["schemas"]["EnrolmentViews.Consent"];
@@ -6463,6 +6610,28 @@ export interface operations {
             };
         };
     };
+    addTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CrossingViews.EventDetail"];
+                };
+            };
+        };
+    };
     dashboard: {
         parameters: {
             query?: never;
@@ -7125,6 +7294,48 @@ export interface operations {
             };
         };
     };
+    captureCameras: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnrolmentViews.CaptureCamera"][];
+                };
+            };
+        };
+    };
+    cameraSnapshot: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cameraCode: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/jpeg": string;
+                };
+            };
+        };
+    };
     unlock: {
         parameters: {
             query?: never;
@@ -7273,6 +7484,76 @@ export interface operations {
             };
         };
     };
+    captureStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnrolmentViews.CaptureStatus"];
+                };
+            };
+        };
+    };
+    startCapture: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EnrolmentController.CaptureStartRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnrolmentViews.CaptureStatus"];
+                };
+            };
+        };
+    };
+    stopCapture: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnrolmentViews.Session"];
+                };
+            };
+        };
+    };
     capture: {
         parameters: {
             query?: {
@@ -7323,6 +7604,29 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EnrolmentViews.Session"];
+                };
+            };
+        };
+    };
+    captureImage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+                captureId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/jpeg": string;
                 };
             };
         };

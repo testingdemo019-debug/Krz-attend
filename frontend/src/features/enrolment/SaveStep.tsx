@@ -26,6 +26,7 @@ export function SaveStep({
   consent,
   good,
   method,
+  cameraCode = null,
   mode,
   guidance,
   pending,
@@ -37,7 +38,9 @@ export function SaveStep({
   rules: EnrolmentRules;
   consent: ConsentDraft;
   good: number;
-  method: 'LIVE' | 'UPLOAD';
+  method: 'LIVE' | 'UPLOAD' | 'CAMERA';
+  /** The camera of a capture at an entry point. */
+  cameraCode?: string | null;
   mode: 'REPLACE' | 'ADD';
   guidance: 'mp' | 'manual' | null;
   pending: boolean;
@@ -72,7 +75,9 @@ export function SaveStep({
               ? `Live camera · ${guidance === 'mp' ? 'MediaPipe guidance' : 'manual capture'}${
                   rules.livenessRequired ? ' · liveness passed' : ''
                 }`
-              : 'Uploaded photos',
+              : method === 'CAMERA'
+                ? `Capture at entry point${cameraCode ? ` · ${cameraCode}` : ''}`
+                : 'Uploaded photos',
           ],
           [
             'Consent',

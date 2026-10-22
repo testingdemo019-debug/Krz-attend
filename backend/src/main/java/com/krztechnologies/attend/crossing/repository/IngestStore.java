@@ -56,7 +56,8 @@ public class IngestStore {
             String modelVersion,
             Integer trackId,
             String workerId,
-            String traceId) {}
+            String traceId,
+            boolean enrolmentCapture) {}
 
     /** A stored crossing: its id and EV code. */
     public record Stored(long id, String code) {}
@@ -78,13 +79,14 @@ public class IngestStore {
                             code, crossing_uid, camera_id, occurred_at, received_at, direction, u_turn, method, employee_id,
                             shift_day, decision, score, second_score, margin, agree_k, agree_n, reid_score, liveness,
                             liveness_score, quality, candidates, face_crop_path, face_crop_blur_path, body_crop_path,
-                            body_crop_blur_path, unknown_label, unknown_cluster, model_version, track_id, worker_id, trace_id)
+                            body_crop_blur_path, unknown_label, unknown_cluster, model_version, track_id, worker_id, trace_id,
+                            enrolment_capture)
                         VALUES (
                             attend.next_code('EV-', 'attend.seq_crossing_code', 6), :uid, :camera, :occurredAt, :receivedAt,
                             :direction, :uTurn, :method, :employee, :shiftDay, :decision, :score, :secondScore, :margin,
                             :agreeK, :agreeN, :reidScore, :liveness, :livenessScore, CAST(:quality AS jsonb),
                             CAST(:candidates AS jsonb), :faceCrop, :faceCropBlur, :bodyCrop, :bodyCropBlur, :unknownLabel,
-                            :unknownCluster, :modelVersion, :trackId, :workerId, :traceId)
+                            :unknownCluster, :modelVersion, :trackId, :workerId, :traceId, :enrolmentCapture)
                         ON CONFLICT (crossing_uid) DO NOTHING
                         RETURNING id, code
                         """)
@@ -118,6 +120,7 @@ public class IngestStore {
                 .param("trackId", c.trackId())
                 .param("workerId", c.workerId())
                 .param("traceId", c.traceId())
+                .param("enrolmentCapture", c.enrolmentCapture())
                 .query((rs, n) -> new Stored(rs.getLong("id"), rs.getString("code")))
                 .optional();
     }

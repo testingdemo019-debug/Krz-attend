@@ -74,14 +74,22 @@ export function useReviewItem(code: string | null) {
   });
 }
 
-/** A decision changes crossings, attendance days, the outbox and the dashboard as well as the queue. */
+/**
+ * A decision changes crossings, attendance days, the outbox and the dashboard as well as the queue, and a template
+ * added from a crop changes the employee's face profile.
+ */
 function useInvalidateAfterDecision() {
   const queryClient = useQueryClient();
   return () =>
     Promise.all(
-      [queryKeys.review, queryKeys.crossings, queryKeys.attendance, queryKeys.dashboard, queryKeys.live].map(key =>
-        queryClient.invalidateQueries({ queryKey: key }),
-      ),
+      [
+        queryKeys.review,
+        queryKeys.crossings,
+        queryKeys.attendance,
+        queryKeys.dashboard,
+        queryKeys.live,
+        queryKeys.employees,
+      ].map(key => queryClient.invalidateQueries({ queryKey: key })),
     );
 }
 

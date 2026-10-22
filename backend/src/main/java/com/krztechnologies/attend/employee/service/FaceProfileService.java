@@ -332,6 +332,17 @@ public class FaceProfileService {
                 reviewCode));
     }
 
+    /** A crossing's face crop became a template (D-118). */
+    public void templateAddedFromCrossing(UUID employeeId, String crossingCode, AuditActor actor) {
+        history.save(new FaceProfileHistory(
+                employeeId,
+                time.now(),
+                FaceProfileHistory.Action.TEMPLATE_ADDED_FROM_CROSSING,
+                actor.employeeId(),
+                actor.label(),
+                crossingCode));
+    }
+
     /** Tracking may have changed: today is recomputed. */
     private void trackingChanged(UUID id) {
         profiles.flush();

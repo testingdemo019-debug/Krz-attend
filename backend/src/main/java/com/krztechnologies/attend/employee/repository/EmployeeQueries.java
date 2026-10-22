@@ -113,7 +113,13 @@ public class EmployeeQueries {
 
     /** A face template (never the embedding). */
     public record TemplateRow(
-            long id, String pose, Integer quality, String source, Instant createdAt, boolean hasThumbnail) {}
+            long id,
+            String pose,
+            Integer quality,
+            String source,
+            String light,
+            Instant createdAt,
+            boolean hasThumbnail) {}
 
     /** The current consent record. */
     public record ConsentRow(
@@ -173,7 +179,7 @@ public class EmployeeQueries {
 
     public List<TemplateRow> templates(UUID employeeId) {
         return jdbc.sql("""
-                        SELECT id, pose, quality, source, created_at, thumbnail_path IS NOT NULL AS has_thumbnail
+                        SELECT id, pose, quality, source, light, created_at, thumbnail_path IS NOT NULL AS has_thumbnail
                           FROM attend.face_template
                          WHERE employee_id = :id AND active
                          ORDER BY created_at, id
@@ -184,6 +190,7 @@ public class EmployeeQueries {
                         rs.getString("pose"),
                         (Integer) rs.getObject("quality"),
                         rs.getString("source"),
+                        rs.getString("light"),
                         instant(rs, "created_at"),
                         rs.getBoolean("has_thumbnail")))
                 .list();

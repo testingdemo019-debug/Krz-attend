@@ -16,6 +16,7 @@ import com.krztechnologies.attend.common.settings.SettingsService;
 import com.krztechnologies.attend.common.time.TimeService;
 import com.krztechnologies.attend.common.transaction.AfterCommit;
 import com.krztechnologies.attend.common.worker.WorkerClient;
+import com.krztechnologies.attend.common.worker.WorkerException;
 import com.krztechnologies.attend.employee.service.ConsentService;
 import com.krztechnologies.attend.employee.service.EmployeeDirectory;
 import com.krztechnologies.attend.employee.service.FaceProfileService;
@@ -54,6 +55,10 @@ import tools.jackson.databind.json.JsonMapper;
  * liveness in live mode when required; uploads also for exposure and pose), liveness lockout with NR-02, the duplicate
  * check against other enrolled employees, and the save: templates (encrypted), face profile, tracking, history, audit,
  * gallery signal. Unsaved captures are discarded when the session ends.
+ *
+ * <p>Capture at an entry point (method CAMERA, D-118): the worker collects the person's best face per angle group
+ * from the attendance camera while they walk through; the samples become the session's captures and are always added
+ * to the existing templates, labelled with their light. Nobody captures their own face.
  */
 @Service
 public class EnrolmentService {
@@ -70,7 +75,13 @@ public class EnrolmentService {
     private static final double MAX_UPLOAD_YAW = 22;
     private static final byte[] PDF = {'%', 'P', 'D', 'F', '-'};
     private static final Set<String> POSES = Set.of("FRONT", "TURN_LEFT", "TURN_RIGHT", "CHIN_DOWN");
+    private static final Set<String> LIGHTS = Set.of("DAY", "EVENING", "NIGHT_IR");
     private static final int SEARCH_LIMIT = 12;
+    /** How long a capture at an entry point runs unless the operator stops it (seconds; at most MAX). */
+    private static final int CAPTURE_SECONDS = 90;
+
+    private static final int MIN_CAPTURE_SECONDS = 10;
+    private static final int MAX_CAPTURE_SECONDS = 180;
 
     private final EnrolmentStore store;
     private final TemplateStore templateStore;
@@ -127,10 +138,14 @@ public class EnrolmentService {
         this.json = json;
     }
 
-    /** {@code LIVE} (guided camera with liveness) or {@code UPLOAD} (photos). */
+    /**
+     * {@code LIVE} (guided camera with liveness), {@code UPLOAD} (photos) or {@code CAMERA} (capture at an entry point:
+     * the attendance camera, D-118).
+     */
     public enum Method {
         LIVE,
-        UPLOAD
+        UPLOAD,
+        CAMERA
     }
 
     /** Replace all active templates (default) or add to them. */
@@ -255,10 +270,165 @@ public class EnrolmentService {
             throw new Errors.BusinessRule(
                     "UPLOAD_DISABLED", "Photo upload is turned off in Settings → Enrolment & quality.");
         }
-        store.openOf(employeeId).ifPresent(previous -> end(previous, "CANCELLED"));
         AttendPrincipal me = currentUser.require();
-        var session = store.start(employeeId, method.name(), me.employeeId(), now, now.plus(SESSION_LENGTH));
+        Long cameraId = null;
+        if (method == Method.CAMERA) {
+            if (employeeId.equals(me.employeeId())) {
+                throw new Errors.BusinessRule(
+                        "SELF_CAPTURE", "You can’t capture your own face — ask another operator to do it.");
+            }
+            cameraId = store.captureCameras().stream()
+                    .findFirst()
+                    .orElseThrow(() -> new Errors.BusinessRule(
+                            "NO_CAMERA", "There is no enabled camera. Add one in Settings → Cameras."))
+                    .id();
+        }
+        store.openOf(employeeId).ifPresent(previous -> end(previous, "CANCELLED"));
+        var session = store.start(employeeId, method.name(), cameraId, me.employeeId(), now, now.plus(SESSION_LENGTH));
         return view(session);
+    }
+
+    /** The enabled cameras a capture at an entry point can use. */
+    @Transactional(readOnly = true)
+    public List<EnrolmentViews.CaptureCamera> captureCameras() {
+        return store.captureCameras().stream()
+                .map(c -> new EnrolmentViews.CaptureCamera(c.code(), c.name(), c.entryPoint()))
+                .toList();
+    }
+
+    /** The camera's latest picture, for the operator to see who is in view while capturing. */
+    @Transactional(readOnly = true)
+    public byte[] cameraSnapshot(String cameraCode) {
+        return worker.snapshot(captureCamera(cameraCode).code());
+    }
+
+    /**
+     * Starts collecting the person's face at the camera (method CAMERA). The worker keeps the best samples of the
+     * person in view per angle group that meet the template bar: enrolment's face size and quality, a template's
+     * sharpness, and at most the recognition profile's head turn.
+     *
+     * @param seconds how long it runs unless stopped (10–180, default 90)
+     */
+    @Transactional
+    public EnrolmentViews.CaptureStatus startCapture(String code, String cameraCode, Integer seconds) {
+        var session = cameraSession(open(code));
+        consentCheck(session.employeeId());
+        var camera = captureCamera(cameraCode);
+        if (!camera.code().equals(session.cameraCode())) {
+            store.camera(session.id(), camera.id());
+        }
+        int duration =
+                seconds == null ? CAPTURE_SECONDS : Math.clamp(seconds, MIN_CAPTURE_SECONDS, MAX_CAPTURE_SECONDS);
+        EnrolmentSettings rules = settings.enrolment();
+        worker.startCapture(
+                camera.code(),
+                session.code(),
+                duration,
+                new WorkerClient.CaptureRules(
+                        rules.minEyePx(),
+                        rules.minQuality(),
+                        TemplateService.MIN_SHARPNESS,
+                        recognition.activeValues().maxYaw()));
+        return status(worker.captureStatus(camera.code(), session.code()));
+    }
+
+    /** What the running capture holds so far (angle groups, people in view). */
+    @Transactional(readOnly = true)
+    public EnrolmentViews.CaptureStatus captureStatus(String code) {
+        var session =
+                cameraSession(store.find(code).orElseThrow(() -> new Errors.NotFound("Enrolment session not found.")));
+        return status(worker.captureStatus(session.cameraCode(), session.code()));
+    }
+
+    /**
+     * Stops the capture: its samples become the session's captures (images and embeddings encrypted), checked like
+     * live captures (face size, quality); the operator chooses which to save.
+     */
+    @Transactional
+    public EnrolmentViews.Session stopCapture(String code) {
+        var session = cameraSession(open(code));
+        List<WorkerClient.CaptureSample> samples = worker.stopCapture(session.cameraCode(), session.code());
+        EnrolmentSettings rules = settings.enrolment();
+        Instant now = time.now();
+        int room = Math.max(0, MAX_CAPTURES - store.captures(session.id()).size());
+        List<WorkerClient.CaptureSample> kept = samples.subList(0, Math.min(room, samples.size()));
+        for (WorkerClient.CaptureSample s : kept) {
+            var face = new WorkerClient.FaceEmbedding(
+                    1, s.quality(), s.livenessPassed(), s.livenessScore(), s.embedding(), s.dim(), s.model());
+            List<String> reasons = reasons(face, true, rules);
+            boolean accepted = reasons.isEmpty() && s.embedding() != null && s.dim() != null;
+            String path = "enrolment/" + session.code() + "/" + UUID.randomUUID() + ".jpg";
+            files.write(FileStore.Folder.UPLOADS, path, crypto.encrypt(s.jpeg()));
+            AfterCommit.onRollback(() -> files.delete(FileStore.Folder.UPLOADS, path));
+            store.addCapture(new EnrolmentStore.NewCapture(
+                    session.id(),
+                    POSES.contains(s.group()) ? s.group() : null,
+                    path,
+                    accepted ? crypto.encrypt(s.embedding()) : null,
+                    qualityJson(face),
+                    s.livenessPassed(),
+                    s.livenessScore() == null ? null : BigDecimal.valueOf(s.livenessScore()),
+                    accepted,
+                    accepted ? null : truncate(String.join("; ", reasons)),
+                    LIGHTS.contains(s.light()) ? s.light() : null,
+                    now));
+        }
+        var card = employees.cards(List.of(session.employeeId())).get(session.employeeId());
+        var camera = captureCamera(session.cameraCode());
+        audit.record(
+                actor(),
+                AuditCategory.ENROLMENT,
+                "Captured face images at an entry point",
+                card.displayName(),
+                null,
+                kept.size() + " images · " + camera.name(),
+                null);
+        return view(session);
+    }
+
+    /** A capture's image (the face crop of a capture at an entry point, or the uploaded photo), decrypted. */
+    @Transactional(readOnly = true)
+    public byte[] captureImage(String code, long captureId) {
+        var session = store.find(code).orElseThrow(() -> new Errors.NotFound("Enrolment session not found."));
+        var capture = store.captures(session.id()).stream()
+                .filter(c -> c.id() == captureId)
+                .findFirst()
+                .orElseThrow(() -> new Errors.NotFound("Capture not found."));
+        return crypto.decrypt(files.read(FileStore.Folder.UPLOADS, capture.imagePath())
+                .orElseThrow(() -> new Errors.NotFound("Capture image not found.")));
+    }
+
+    private EnrolmentStore.Session cameraSession(EnrolmentStore.Session session) {
+        if (!Method.CAMERA.name().equals(session.method()) || session.cameraCode() == null) {
+            throw new Errors.BusinessRule(
+                    "NOT_A_CAMERA_SESSION", "This enrolment session doesn’t capture at an entry point.");
+        }
+        return session;
+    }
+
+    private EnrolmentStore.CaptureCamera captureCamera(String cameraCode) {
+        return store.captureCameras().stream()
+                .filter(c -> c.code().equals(cameraCode))
+                .findFirst()
+                .orElseThrow(() -> invalid("cameraCode", "Choose an enabled camera."));
+    }
+
+    private static EnrolmentViews.CaptureStatus status(WorkerClient.CaptureStatus s) {
+        List<EnrolmentViews.CaptureGroup> groups = List.of("FRONT", "TURN_LEFT", "TURN_RIGHT", "CHIN_DOWN").stream()
+                .map(g -> new EnrolmentViews.CaptureGroup(
+                        g,
+                        s.groups().getOrDefault(g, List.of()).stream()
+                                .map(x -> new EnrolmentViews.CaptureGroupSample(
+                                        x.score(), x.eyePx(), x.yaw(), x.pitch(), x.light()))
+                                .toList()))
+                .toList();
+        return new EnrolmentViews.CaptureStatus(
+                s.status() == null ? "COMPLETED" : s.status().toUpperCase(Locale.ROOT),
+                s.secondsLeft(),
+                s.people(),
+                s.crowded(),
+                s.otherPerson(),
+                groups);
     }
 
     /**
@@ -302,6 +472,10 @@ public class EnrolmentService {
     @Transactional
     public EnrolmentViews.CaptureResult capture(String code, byte[] upload, String pose) {
         var session = open(code);
+        if (Method.CAMERA.name().equals(session.method())) {
+            throw new Errors.BusinessRule(
+                    "CAMERA_SESSION", "This session captures at an entry point; start the capture there instead.");
+        }
         Instant now = time.now();
         lockedCheck(session.employeeId(), now);
         consentCheck(session.employeeId());
@@ -339,6 +513,7 @@ public class EnrolmentService {
                 face.livenessScore() == null ? null : BigDecimal.valueOf(face.livenessScore()),
                 accepted,
                 accepted ? null : truncate(String.join("; ", reasons)),
+                null,
                 now));
         Integer attempts = null;
         Instant lockedUntil = null;
@@ -399,10 +574,16 @@ public class EnrolmentService {
             }
             chosen.add(c);
         }
-        if (chosen.size() < rules.minGood()) {
+        boolean camera = Method.CAMERA.name().equals(session.method());
+        if (camera && mode != Mode.ADD) {
+            throw invalid("mode", "Captures at an entry point are always added to the existing templates.");
+        }
+        // Templates from the entry camera add angles to an enrolment that is already complete: one is enough then.
+        int needed = camera && templateStore.activeCount(session.employeeId()) >= rules.minGood() ? 1 : rules.minGood();
+        if (chosen.size() < needed) {
             throw new Errors.BusinessRule(
                     "NOT_ENOUGH_CAPTURES",
-                    "At least " + rules.minGood() + " good images are needed (you have " + chosen.size() + ").");
+                    "At least " + needed + " good images are needed (you have " + chosen.size() + ").");
         }
         AuditActor actor = actor();
         var card = employees.cards(List.of(session.employeeId())).get(session.employeeId());
@@ -435,6 +616,7 @@ public class EnrolmentService {
             templateStore.deactivateActive(session.employeeId(), now);
         }
         boolean live = Method.LIVE.name().equals(session.method());
+        String source = session.method();
         for (EnrolmentStore.Capture c : chosen) {
             JsonNode q = json.readTree(c.quality());
             byte[] image = files.read(FileStore.Folder.UPLOADS, c.imagePath())
@@ -447,13 +629,19 @@ public class EnrolmentService {
                     q.path("score").isNumber() ? q.path("score").asInt() : null,
                     q.path("eye_px").isNumber() ? q.path("eye_px").asInt() : null,
                     c.pose() == null ? "FRONT" : c.pose(),
-                    live ? "LIVE" : "UPLOAD",
+                    source,
+                    c.light(),
                     image,
                     actor.employeeId());
         }
         int total = templateStore.activeCount(session.employeeId());
-        String detail = chosen.size() + " templates · " + (live ? "live camera" : "upload")
-                + (live && rules.livenessRequired() ? " · liveness passed" : "");
+        String how = switch (Method.valueOf(source)) {
+            case LIVE -> "live camera";
+            case UPLOAD -> "upload";
+            case CAMERA -> "entry camera " + session.cameraCode();
+        };
+        String detail =
+                chosen.size() + " templates · " + how + (live && rules.livenessRequired() ? " · liveness passed" : "");
         boolean trackingChanged = faces.enrolled(session.employeeId(), before, total, detail, actor);
         end(session, "COMPLETED");
         return new EnrolmentViews.Completed(chosen.size(), total, trackingChanged);
@@ -491,6 +679,16 @@ public class EnrolmentService {
     }
 
     private void end(EnrolmentStore.Session session, String status) {
+        if (Method.CAMERA.name().equals(session.method()) && session.cameraCode() != null) {
+            // A capture still running at the camera ends with the session (none running is the usual case).
+            AfterCommit.run(() -> {
+                try {
+                    worker.stopCapture(session.cameraCode(), session.code());
+                } catch (WorkerException e) {
+                    // Nothing was running, or the worker is away: its capture ends by itself within 3 minutes.
+                }
+            });
+        }
         store.captures(session.id()).forEach(c -> deleteAfterCommit(c.imagePath()));
         store.deleteCaptures(session.id());
         store.finish(session.id(), status, time.now());
@@ -689,6 +887,7 @@ public class EnrolmentService {
                 session.code(),
                 person(card),
                 session.method(),
+                session.cameraCode(),
                 session.status(),
                 session.expiresAt(),
                 card.faceStatus(),
@@ -733,6 +932,7 @@ public class EnrolmentService {
                                 integer(q, "brightness"),
                                 integer(q, "score")),
                 c.livenessPassed(),
+                c.light(),
                 c.createdAt());
     }
 

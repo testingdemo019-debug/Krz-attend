@@ -119,6 +119,8 @@ public final class CrossingViews {
      * @param flip an active direction flip, or null
      * @param voided an active void, or null
      * @param attendance null for a crossing without identity
+     * @param template whether the face crop can become the employee's template (D-118); null without people.enrol,
+     *     identity or face crop
      */
     public record EventDetail(
             EventRow event,
@@ -136,5 +138,9 @@ public final class CrossingViews {
             @Nullable Correction voided,
             @Nullable AttendanceRef attendance,
             List<PunchRow> punches,
-            List<ChangeRow> changes) {}
+            List<ChangeRow> changes,
+            @Nullable TemplateOffer template) {}
+
+    /** Whether the crossing's face crop can become a face template now, with the reason when not. */
+    public record TemplateOffer(boolean ok, String why) {}
 }

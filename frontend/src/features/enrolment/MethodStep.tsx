@@ -1,4 +1,7 @@
-/** Step 3, "Choose a capture method": live camera or photos, and replace or add to existing templates. */
+/**
+ * Step 3, "Choose a capture method": live camera, photos, or a capture at an entry point (the attendance camera,
+ * D-118), and replace or add to existing templates (a capture at an entry point always adds).
+ */
 import type { Candidate, EnrolmentMethod } from '@/api/enrolment';
 import { Icon, type IconName } from '@/components/icons/Icon';
 import { Chip } from '@/components/ui/Chip';
@@ -9,6 +12,7 @@ import { WizardNav } from './WizardNav';
 const METHODS: readonly (readonly [EnrolmentMethod, IconName, string])[] = [
   ['LIVE', 'camera', 'Live camera'],
   ['UPLOAD', 'upload', 'Upload photos'],
+  ['CAMERA', 'cctv', 'Capture at entry point'],
 ];
 
 const MODES = [
@@ -42,9 +46,11 @@ export function MethodStep({
   const describe = (m: EnrolmentMethod) =>
     m === 'LIVE'
       ? 'Recommended. Guided capture of 5 poses with automatic quality checks and liveness.'
-      : allowUpload
-        ? 'JPG or PNG, up to 10 files. Each photo is checked automatically.'
-        : 'Disabled in Settings → Enrolment & quality.';
+      : m === 'CAMERA'
+        ? 'Uses the attendance camera, so templates match its angle and light. Always added to existing templates.'
+        : allowUpload
+          ? 'JPG or PNG, up to 10 files. Each photo is checked automatically.'
+          : 'Disabled in Settings → Enrolment & quality.';
   return (
     <>
       <PersonBar candidate={candidate} />
@@ -94,7 +100,7 @@ export function MethodStep({
           );
         })}
       </div>
-      {templates > 0 && (
+      {templates > 0 && method !== 'CAMERA' && (
         <div className="mt-16">
           <div className="label mb-8">
             {first} already has {plural(templates, 'template')}

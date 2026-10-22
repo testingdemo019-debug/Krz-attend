@@ -21,6 +21,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -143,6 +144,13 @@ public class CrossingController {
     @GetMapping("/{code}")
     public CrossingViews.EventDetail detail(@PathVariable @Pattern(regexp = CODE) String code) {
         return crossings.detail(code);
+    }
+
+    @Operation(summary = "Add the identified crossing's face crop as the employee's face template")
+    @RequiresPermission({Permission.EVENTS_VIEW, Permission.PEOPLE_ENROL})
+    @PostMapping("/{code}/template")
+    public CrossingViews.EventDetail addTemplate(@PathVariable @Pattern(regexp = CODE) String code) {
+        return crossings.addTemplate(code);
     }
 
     private static String person(EventRow r) {

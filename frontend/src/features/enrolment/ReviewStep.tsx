@@ -32,6 +32,7 @@ export function ReviewStep({
   names,
   poses,
   live,
+  needed = rules.minGood,
   dupConfirm,
   onDupConfirm,
   onRemoved,
@@ -48,6 +49,8 @@ export function ReviewStep({
   names: Record<number, string>;
   poses: Partial<Record<PoseKey, number>>;
   live: boolean;
+  /** Good images needed (fewer when a capture at an entry point adds to a complete enrolment). */
+  needed?: number;
   dupConfirm: boolean;
   onDupConfirm: (value: boolean) => void;
   onRemoved: (captureId: number) => void;
@@ -66,16 +69,16 @@ export function ReviewStep({
   const good = captures.length;
   const p = candidate.employee;
   const poseOf = (id: number) => CAPTURE_POSES.find(x => poses[x.key] === id);
-  const ready = good >= rules.minGood && check.isSuccess && (!dup || dupConfirm);
+  const ready = good >= needed && check.isSuccess && (!dup || dupConfirm);
   const firstImage = captures[0] ? images[captures[0].id] : undefined;
   return (
     <>
       <PersonBar candidate={candidate} />
       <h2 className="mb-4">Review captures</h2>
       <p className="muted small mb-12">
-        At least <b>{rules.minGood}</b> good images are needed (quality ≥ {rules.minQuality}, eye distance ≥{' '}
-        {rules.minEyePx} px). You have{' '}
-        <b style={{ color: `var(--${good >= rules.minGood ? 'green' : 'red'})` }}>{good}</b>.
+        At least <b>{needed}</b> good {needed === 1 ? 'image is' : 'images are'} needed (quality ≥ {rules.minQuality},
+        eye distance ≥ {rules.minEyePx} px). You have{' '}
+        <b style={{ color: `var(--${good >= needed ? 'green' : 'red'})` }}>{good}</b>.
       </p>
       <div className="cap-grid">
         {captures.length > 0 ? (

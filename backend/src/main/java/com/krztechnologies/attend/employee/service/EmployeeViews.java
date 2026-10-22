@@ -108,11 +108,18 @@ public final class EmployeeViews {
             int version) {}
 
     /** A face template; {@code thumbnailUrl} only with people.view.sensitive. */
+    /**
+     * An active face template.
+     *
+     * @param source LIVE, UPLOAD, REVIEW, CAMERA (capture at an entry point) or CROSSING (from a crossing's crop)
+     * @param light DAY, EVENING or NIGHT_IR for a template from a capture at an entry point, else null
+     */
     public record Template(
             long id,
             @Nullable String pose,
             @Nullable Integer quality,
             String source,
+            @Nullable String light,
             Instant createdAt,
             @Nullable String thumbnailUrl) {}
 

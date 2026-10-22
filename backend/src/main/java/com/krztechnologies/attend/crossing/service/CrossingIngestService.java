@@ -35,6 +35,7 @@ import org.springframework.transaction.annotation.Transactional;
  * employee must exist with an active face profile, else the crossing is UNKNOWN), maps the message to the row exactly
  * as the contract's table says (an uncertain candidate is never stored as the identity), assigns the shift day (R3),
  * creates or joins the review item, raises NR-02 and NR-05, and has the day recomputed ({@link CrossingsChanged}).
+ * A walk during an enrolment capture (D-118) is stored as recorded only, with no review item or notification.
  * A redelivered message ({@code crossing_uid} already stored) changes nothing.
  */
 @Service
@@ -100,7 +101,9 @@ public class CrossingIngestService {
             }
         }
         boolean identified = person != null;
-        Decision decision = m.uTurn() || identified ? Decision.AUTO : Decision.PENDING_REVIEW;
+        // A walk during an enrolment capture at the entry point (D-118) is recorded, never counted or reviewed.
+        boolean capture = m.enrolmentCapture();
+        Decision decision = m.uTurn() || identified || capture ? Decision.AUTO : Decision.PENDING_REVIEW;
         LocalDate shiftDay = identified
                 ? organisation
                         .calendar()
@@ -108,7 +111,7 @@ public class CrossingIngestService {
                                 new ShiftCalendar.Person(person.id(), person.departmentId(), person.locationId()),
                                 m.ts())
                 : null;
-        boolean unknown = hint == Hint.UNKNOWN && !m.uTurn();
+        boolean unknown = hint == Hint.UNKNOWN && !m.uTurn() && !capture;
         var stored = store.insert(new IngestStore.NewCrossing(
                 m.crossingUid(),
                 camera.id(),
@@ -139,7 +142,8 @@ public class CrossingIngestService {
                 m.modelVersion(),
                 m.trackId(),
                 m.workerId(),
-                m.traceId()));
+                m.traceId(),
+                capture));
         if (stored.isEmpty()) {
             LOG.debug("Crossing {} was stored before (redelivery)", m.crossingUid());
             return Outcome.DUPLICATE;
@@ -149,11 +153,13 @@ public class CrossingIngestService {
             events.publishEvent(new CrossingsChanged(person.id(), shiftDay));
         } else {
             IngestStore.ReviewRef item = decision == Decision.PENDING_REVIEW ? review(m, hint, crossing, camera) : null;
-            var effect = PunchRulesEngine.unidentified(
-                    m.uTurn(),
-                    decision,
-                    item == null ? null : item.code(),
-                    settings.privacy().unknownHours());
+            var effect = capture && !m.uTurn()
+                    ? PunchRulesEngine.enrolmentCapture()
+                    : PunchRulesEngine.unidentified(
+                            m.uTurn(),
+                            decision,
+                            item == null ? null : item.code(),
+                            settings.privacy().unknownHours());
             store.linkReview(
                     crossing.id(),
                     item == null ? null : item.id(),

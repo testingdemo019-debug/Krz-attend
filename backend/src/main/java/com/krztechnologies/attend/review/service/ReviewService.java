@@ -71,8 +71,6 @@ public class ReviewService {
     private static final String UNDO_KIND = "review";
     private static final int NR03_DEFAULT_MINUTES = 30;
     private static final int MAX_OPEN_LISTED = 2_000;
-    private static final int MIN_SHARPNESS = 60;
-    private static final int MAX_POSE_DEGREES = 20;
     private static final int MAX_EXPORTED = 50_000;
     /** The punch effects a decision's toast names. */
     private static final Set<String> PUNCHES = Set.of("CHECK_IN", "CHECK_OUT", "MOVEMENT");
@@ -692,41 +690,15 @@ public class ReviewService {
                 .orElse(null);
     }
 
-    /** The prototype's {@code templateEligibility}; the consent check needs the employee. */
+    /** The prototype's {@code templateEligibility} (TemplateService); the consent check needs the employee. */
     private ReviewViews.Eligibility eligibility(String type, Sighting best, UUID employee, String employeeName) {
-        if (employee != null && !"GIVEN".equals(employees.consentStatus(employee))) {
-            String first =
-                    employeeName.contains(" ") ? employeeName.substring(0, employeeName.indexOf(' ')) : employeeName;
-            return new ReviewViews.Eligibility(false, first + " has no consent on file — templates can’t be added");
-        }
-        JsonNode q = best == null || best.quality() == null ? null : json.readTree(best.quality());
-        if (q == null) {
-            return new ReviewViews.Eligibility(false, "No quality data for this crop");
-        }
-        if ("REID".equals(type)) {
-            return new ReviewViews.Eligibility(false, "Back-view crops can’t become face templates");
-        }
-        int minEyePx = settings.enrolment().minEyePx();
-        int eyePx = q.path("eye_px").asInt(0);
-        if (eyePx < minEyePx) {
-            return new ReviewViews.Eligibility(
-                    false,
-                    "Face too small for a template (" + eyePx + " px between the eyes; enrolment needs " + minEyePx
-                            + " px)");
-        }
-        int sharp = q.path("sharp").asInt(0);
-        if (sharp < MIN_SHARPNESS) {
-            return new ReviewViews.Eligibility(false, "Not sharp enough for a template (sharpness " + sharp + ")");
-        }
-        long pose = Math.round(Math.max(
-                Math.abs(q.path("yaw").asDouble(0)), Math.abs(q.path("pitch").asDouble(0))));
-        if (pose > MAX_POSE_DEGREES) {
-            return new ReviewViews.Eligibility(false, "Head turned too far for a template (" + pose + "°)");
-        }
-        if (best.faceCrop() == null || best.cropsPurged()) {
-            return new ReviewViews.Eligibility(false, "The crop is no longer stored");
-        }
-        return new ReviewViews.Eligibility(true, "Passes the enrolment quality threshold");
+        var crop = new TemplateService.Crop(
+                best == null ? null : best.faceCrop(),
+                best == null ? null : best.quality(),
+                "REID".equals(type),
+                best == null || best.cropsPurged());
+        var eligibility = templates.eligibility(employee, employeeName, crop);
+        return new ReviewViews.Eligibility(eligibility.ok(), eligibility.why());
     }
 
     private void queueChanged() {

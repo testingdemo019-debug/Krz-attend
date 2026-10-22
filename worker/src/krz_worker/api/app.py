@@ -8,7 +8,14 @@ from __future__ import annotations
 
 from fastapi import FastAPI
 
-from krz_worker.api import errors, routes_cameras, routes_discovery, routes_faces, routes_health
+from krz_worker.api import (
+    errors,
+    routes_cameras,
+    routes_capture,
+    routes_discovery,
+    routes_faces,
+    routes_health,
+)
 from krz_worker.context import Context
 
 
@@ -16,6 +23,6 @@ def create(context: Context) -> FastAPI:
     app = FastAPI(title="KRZ Attend worker", docs_url=None, redoc_url=None, openapi_url=None)
     app.state.context = context
     errors.install(app)
-    for module in (routes_health, routes_faces, routes_cameras, routes_discovery):
+    for module in (routes_health, routes_faces, routes_cameras, routes_capture, routes_discovery):
         app.include_router(module.router)
     return app

@@ -18,7 +18,12 @@ public class TemplateStore {
         this.jdbc = jdbc;
     }
 
-    /** A template to store; {@code embeddingEnc} is already encrypted. */
+    /**
+     * A template to store; {@code embeddingEnc} is already encrypted.
+     *
+     * @param crossingId the crossing whose face crop it is (source CROSSING), else null
+     * @param light DAY, EVENING or NIGHT_IR for a template from a capture at an entry point, else null
+     */
     public record NewTemplate(
             UUID employeeId,
             byte[] embeddingEnc,
@@ -32,15 +37,17 @@ public class TemplateStore {
             String source,
             String thumbnailPath,
             Long reviewItemId,
+            Long crossingId,
+            String light,
             UUID createdBy) {}
 
     public long insert(NewTemplate t) {
         return jdbc.sql("""
                         INSERT INTO attend.face_template (employee_id, embedding_enc, key_id, model_name, model_version, dim,
                                                           quality, eye_px, pose, source, thumbnail_path, review_item_id,
-                                                          created_by)
+                                                          crossing_id, light, created_by)
                         VALUES (:employee, :embedding, :key, :modelName, :modelVersion, :dim, :quality, :eyePx, :pose,
-                                :source, :thumbnail, :item, :by)
+                                :source, :thumbnail, :item, :crossing, :light, :by)
                         RETURNING id
                         """)
                 .param("employee", t.employeeId())
@@ -55,8 +62,18 @@ public class TemplateStore {
                 .param("source", t.source())
                 .param("thumbnail", t.thumbnailPath())
                 .param("item", t.reviewItemId())
+                .param("crossing", t.crossingId())
+                .param("light", t.light())
                 .param("by", t.createdBy())
                 .query(Long.class)
+                .single();
+    }
+
+    /** Whether the crossing's face crop is already an active template. */
+    public boolean activeForCrossing(long crossingId) {
+        return jdbc.sql("SELECT EXISTS (SELECT 1 FROM attend.face_template WHERE crossing_id = :id AND active)")
+                .param("id", crossingId)
+                .query(Boolean.class)
                 .single();
     }
 

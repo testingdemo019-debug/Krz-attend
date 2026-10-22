@@ -4,7 +4,9 @@ Per processed frame: people (YOLOX) whose anchor is inside the zone -> ByteTrack
 face checks (YuNet on the head region at full resolution, quality gate, liveness, SFace, gallery vote) and body
 embeddings (OSNet) -> a confirmed crossing gets its R14 decision, crops and message, then waits out the U-turn window
 before it is sent. Direction modes are not applied here: every crossing is sent and the backend applies the camera's
-mode, so the rule lives in one place. During a calibration run crossings go to the run instead of the stream.
+mode, so the rule lives in one place. During a calibration run crossings go to the run instead of the stream. During
+an enrolment capture (``pipeline.enrol_capture``) the person in view gives face samples to it, and their crossings are
+marked so the backend records them without counting them.
 
 ``process`` does the work of one frame and returns what it emitted, so tests and replay_video.py drive it directly;
 ``run`` analyses at most WORKER_MAX_FPS pictures a second of a live source, counted on their arrival times
@@ -28,10 +30,11 @@ import numpy as np
 
 from krz_worker.context import Context, best_effort
 from krz_worker.db import CameraConfig
-from krz_worker.models.base import Image, Person
+from krz_worker.models.base import Face, Image, Person
 from krz_worker.pipeline import crops as crop_files
 from krz_worker.pipeline.calibration import CalibrationCrossing, Run
 from krz_worker.pipeline.crossing_builder import build, new_crossing_uid, new_trace_id
+from krz_worker.pipeline.enrol_capture import Capture, Sample, encode_jpeg, light_of
 from krz_worker.pipeline.overlays import OverlayTrack, Throttle, payload
 from krz_worker.pipeline.pacing import FrameBudget
 from krz_worker.recognition import quality as face_quality
@@ -125,12 +128,17 @@ class CameraPipeline:
         height, width = image.shape[:2]
         people = [p for p in self._models.person_detector.detect(image) if self._in_zone(p, width, height)]
         emitted: list[dict[str, str]] = []
-        for track_id, person in self._tracker.update(people):
+        tracked = list(self._tracker.update(people))
+        capture = self._ctx.captures.active(self.camera.code, frame.ts)
+        alone = capture is not None and capture.frame(len(tracked), frame.ts)
+        for track_id, person in tracked:
             state = self._tracks.get(track_id)
             if state is None:
                 state = self._tracks[track_id] = TrackState(track_id, frame.ts, frame.ts)
             state.last_seen, state.box = frame.ts, person.box
-            self._faces(state, image, thresholds)
+            if alone:
+                state.enrolment_capture = True
+            self._faces(state, image, thresholds, capture if alone else None, frame.ts)
             self._body(state, image)
             crossing = self._tripwire(state, width, height, frame.ts)
             if crossing is not None:
@@ -157,7 +165,14 @@ class CameraPipeline:
         x1, _, x2, y2 = state.box
         return state.line.update(self.camera.wire, ((x1 + x2) / 2, y2), width, height, self.camera.confirm_frames, ts)
 
-    def _faces(self, state: TrackState, image: Image, thresholds: Thresholds) -> None:
+    def _faces(
+        self,
+        state: TrackState,
+        image: Image,
+        thresholds: Thresholds,
+        capture: Capture | None = None,
+        at: dt.datetime | None = None,
+    ) -> None:
         decided = (
             len(state.votes) >= thresholds.agree_k
             and decide(state.evidence("IN", self.camera.liveness_enabled), thresholds).hint == "AUTO"
@@ -165,7 +180,7 @@ class CameraPipeline:
         x1, y1, x2, y2 = state.box
         head_bottom = y1 + (y2 - y1) * HEAD_SHARE
         grown = state.last_face_height > 0 and (y2 - y1) > state.last_face_height * (1 + thresholds.recheck_grow / 100)
-        if decided and not grown and self._frame_index - state.last_face_check < FACE_EVERY_DECIDED:
+        if capture is None and decided and not grown and self._frame_index - state.last_face_check < FACE_EVERY_DECIDED:
             return
         state.last_face_check = self._frame_index
         head = crop_files.body_crop(image, (x1, y1, x2, head_bottom))
@@ -185,6 +200,41 @@ class CameraPipeline:
             embedding = self._models.face_embedder.embed([aligned])[0]
             state.votes.append(Vote(tuple(self._ctx.gallery.current().match(embedding[None, :], k=3))))
         state.offer_face(FaceSample(measured, measured.passed, crop_files.face_crop(image, face.box), embedding))
+        if capture is not None and at is not None:
+            self._capture(capture, state, image, face, aligned, measured, embedding, at)
+
+    def _capture(
+        self,
+        capture: Capture,
+        state: TrackState,
+        image: Image,
+        face: Face,
+        aligned: Image,
+        measured: face_quality.Quality,
+        embedding: np.ndarray | None,
+        at: dt.datetime,
+    ) -> None:
+        """Offers the face to the enrolment capture when it meets its bar and beats what the angle group holds."""
+        group = capture.wants(measured, at)
+        if group is None:
+            return
+        crop = crop_files.face_crop(image, face.box)
+        jpeg = encode_jpeg(crop)
+        if jpeg is None:
+            return
+        vector = embedding if embedding is not None else self._models.face_embedder.embed([aligned])[0]
+        sample = Sample(
+            group,
+            measured,
+            jpeg,
+            vector,
+            self._models.face_embedder.info.tag,
+            at,
+            light_of(crop, at),
+            self._models.liveness.check(image, face),
+        )
+        if capture.offer(sample):
+            state.enrolment_capture = True
 
     def _body(self, state: TrackState, image: Image) -> None:
         if self._frame_index - state.last_body_check < BODY_EVERY:
@@ -281,6 +331,7 @@ class CameraPipeline:
             model_version=self._models.model_version,
             worker_id=ctx.settings.worker_id,
             trace_id=trace_id,
+            enrolment_capture=state.enrolment_capture,
         )
 
     def _release(self, released: Released[_Pending]) -> dict[str, str]:

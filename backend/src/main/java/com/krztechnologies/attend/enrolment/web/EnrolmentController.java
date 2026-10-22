@@ -10,6 +10,8 @@ import com.krztechnologies.attend.enrolment.service.EnrolmentViews;
 import com.krztechnologies.attend.privacy.service.ConsentNoticeService;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
@@ -19,6 +21,8 @@ import java.io.UncheckedIOException;
 import java.util.List;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
+import org.springframework.http.CacheControl;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -136,6 +140,58 @@ public class EnrolmentController {
         return enrolment.capture(code, bytes(image), pose);
     }
 
+    /**
+     * @param cameraCode the camera at the entry point the person walks through
+     * @param seconds how long the capture runs unless stopped (10–180, default 90)
+     */
+    public record CaptureStartRequest(
+            @NotNull @Pattern(regexp = "^CAM-\\d{2,}$") String cameraCode,
+            @Nullable @Min(10) @Max(180) Integer seconds) {}
+
+    @Operation(summary = "The enabled cameras a capture at an entry point can use")
+    @RequiresPermission(Permission.PEOPLE_ENROL)
+    @GetMapping("/enrolment/cameras")
+    public List<EnrolmentViews.CaptureCamera> captureCameras() {
+        return enrolment.captureCameras();
+    }
+
+    @Operation(summary = "The camera's latest picture while capturing at its entry point (never cached)")
+    @RequiresPermission(Permission.PEOPLE_ENROL)
+    @GetMapping(value = "/enrolment/cameras/{cameraCode}/snapshot", produces = MediaType.IMAGE_JPEG_VALUE)
+    public ResponseEntity<byte[]> cameraSnapshot(@PathVariable @Pattern(regexp = "^CAM-\\d{2,}$") String cameraCode) {
+        return jpeg(enrolment.cameraSnapshot(cameraCode));
+    }
+
+    @Operation(summary = "Start capturing the person's face at the camera of an entry point (method CAMERA)")
+    @RequiresPermission(Permission.PEOPLE_ENROL)
+    @PostMapping("/enrolment/sessions/{code}/capture")
+    public EnrolmentViews.CaptureStatus startCapture(
+            @PathVariable @Pattern(regexp = CODE) String code, @Valid @RequestBody CaptureStartRequest request) {
+        return enrolment.startCapture(code, request.cameraCode(), request.seconds());
+    }
+
+    @Operation(summary = "What the capture at the entry point holds so far: angle groups and people in view")
+    @RequiresPermission(Permission.PEOPLE_ENROL)
+    @GetMapping("/enrolment/sessions/{code}/capture")
+    public EnrolmentViews.CaptureStatus captureStatus(@PathVariable @Pattern(regexp = CODE) String code) {
+        return enrolment.captureStatus(code);
+    }
+
+    @Operation(summary = "Stop the capture at the entry point; its samples become the session's captures")
+    @RequiresPermission(Permission.PEOPLE_ENROL)
+    @PostMapping("/enrolment/sessions/{code}/capture/stop")
+    public EnrolmentViews.Session stopCapture(@PathVariable @Pattern(regexp = CODE) String code) {
+        return enrolment.stopCapture(code);
+    }
+
+    @Operation(summary = "A capture's image (never cached)")
+    @RequiresPermission(Permission.PEOPLE_ENROL)
+    @GetMapping(value = "/enrolment/sessions/{code}/captures/{captureId}/image", produces = MediaType.IMAGE_JPEG_VALUE)
+    public ResponseEntity<byte[]> captureImage(
+            @PathVariable @Pattern(regexp = CODE) String code, @PathVariable long captureId) {
+        return jpeg(enrolment.captureImage(code, captureId));
+    }
+
     @Operation(summary = "Remove a capture")
     @RequiresPermission(Permission.PEOPLE_ENROL)
     @DeleteMapping("/enrolment/sessions/{code}/captures/{captureId}")
@@ -177,6 +233,13 @@ public class EnrolmentController {
     public ResponseEntity<Void> unlock(@PathVariable UUID employeeId) {
         enrolment.unlock(employeeId);
         return ResponseEntity.noContent().build();
+    }
+
+    private static ResponseEntity<byte[]> jpeg(byte[] image) {
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.noStore())
+                .contentType(MediaType.IMAGE_JPEG)
+                .body(image);
     }
 
     private static byte[] bytes(MultipartFile file) {

@@ -79,9 +79,10 @@ public final class EnrolmentViews {
             @Nullable Integer score) {}
 
     /**
-     * @param pose null for uploaded photos
+     * @param pose null for uploaded photos; the angle group for a capture at an entry point
      * @param rejectReason the prototype's texts, joined with "; "
      * @param livenessPassed null for uploads
+     * @param light DAY, EVENING or NIGHT_IR for a capture at an entry point, else null
      */
     public record Capture(
             long id,
@@ -90,7 +91,34 @@ public final class EnrolmentViews {
             @Nullable String rejectReason,
             @Nullable Quality quality,
             @Nullable Boolean livenessPassed,
+            @Nullable String light,
             Instant createdAt) {}
+
+    /** A camera a capture at an entry point can use. */
+    public record CaptureCamera(
+            String code, String name, @Nullable String entryPoint) {}
+
+    /** One sample an angle group holds while a capture at an entry point runs. */
+    public record CaptureGroupSample(
+            @Nullable Integer score,
+            @Nullable Integer eyePx,
+            @Nullable Double yaw,
+            @Nullable Double pitch,
+            @Nullable String light) {}
+
+    /** An angle group: FRONT, TURN_LEFT, TURN_RIGHT or CHIN_DOWN, with its samples, best first. */
+    public record CaptureGroup(String group, List<CaptureGroupSample> samples) {}
+
+    /**
+     * A capture at an entry point while it runs.
+     *
+     * @param status RUNNING, COMPLETED (time is up) or STOPPED
+     * @param people people in view in the camera's last analysed picture
+     * @param crowded more than one person was in view in the last two seconds (no samples are taken then)
+     * @param otherPerson samples refused because they looked like someone else
+     */
+    public record CaptureStatus(
+            String status, int secondsLeft, int people, boolean crowded, int otherPerson, List<CaptureGroup> groups) {}
 
     /**
      * The employee's current consent.
@@ -112,11 +140,14 @@ public final class EnrolmentViews {
      * @param activeNotice the notice version consent is given against
      * @param livenessFailures liveness failures within the lock window
      * @param goodCaptures accepted captures so far
+     * @param method LIVE, UPLOAD or CAMERA (capture at an entry point)
+     * @param cameraCode the camera of a capture at an entry point, else null
      */
     public record Session(
             String code,
             PersonRef employee,
             String method,
+            @Nullable String cameraCode,
             String status,
             Instant expiresAt,
             String faceStatus,

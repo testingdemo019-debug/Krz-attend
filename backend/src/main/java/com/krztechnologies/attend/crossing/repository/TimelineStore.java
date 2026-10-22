@@ -40,13 +40,14 @@ public class TimelineStore {
             String cameraMode,
             boolean voided,
             String voidedBy,
-            String voidReason) {}
+            String voidReason,
+            boolean enrolmentCapture) {}
 
     public List<Row> identified(UUID employeeId, LocalDate shiftDay) {
         return jdbc.sql("""
                         SELECT c.id, c.code, c.occurred_at, c.direction, c.original_direction, c.method, c.u_turn, cam.code AS camera_code,
                                cam.name AS camera_name, cam.direction_mode, c.voided, v.reason AS void_reason,
-                               ve.display_name AS voided_by
+                               ve.display_name AS voided_by, c.enrolment_capture
                           FROM attend.crossing c
                           JOIN attend.camera cam ON cam.id = c.camera_id
                           LEFT JOIN LATERAL (
@@ -116,6 +117,7 @@ public class TimelineStore {
                 rs.getString("direction_mode"),
                 rs.getBoolean("voided"),
                 rs.getString("voided_by"),
-                rs.getString("void_reason"));
+                rs.getString("void_reason"),
+                rs.getBoolean("enrolment_capture"));
     }
 }

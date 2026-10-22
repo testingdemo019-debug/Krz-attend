@@ -14,6 +14,7 @@ import redis
 from krz_worker.config import Settings
 from krz_worker.crypto import KeyRing
 from krz_worker.pipeline.calibration import Calibrations
+from krz_worker.pipeline.enrol_capture import Captures
 from krz_worker.recognition.decision import Thresholds
 from krz_worker.recognition.gallery import Gallery
 from krz_worker.timeutil import now_utc
@@ -44,6 +45,8 @@ class Context:
     gallery: Gallery = field(default_factory=Gallery)
     live: Live = field(default_factory=Live)
     calibrations: Calibrations = field(default_factory=Calibrations)
+    #: Enrolment captures at entry points (D-118).
+    captures: Captures = field(default_factory=Captures)
     models: Models | None = None
     reid: ReIdGallery | None = None
     clusters: UnknownClusters | None = None

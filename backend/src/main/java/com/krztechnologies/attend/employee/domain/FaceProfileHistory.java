@@ -60,6 +60,7 @@ public class FaceProfileHistory {
         REACTIVATED,
         ERASED,
         TEMPLATE_ADDED_FROM_REVIEW,
+        TEMPLATE_ADDED_FROM_CROSSING,
         ENROLMENT_DECLINED,
         CONSENT_WITHDRAWN
     }

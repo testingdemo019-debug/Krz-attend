@@ -109,7 +109,11 @@ public class CrossingQueries {
             boolean hasBodyCrop,
             boolean cropsPurged) {}
 
-    /** What the detail adds to the row. */
+    /**
+     * What the detail adds to the row.
+     *
+     * @param faceCrop the encrypted face crop's path (for a template, D-118; never sent to the browser)
+     */
     public record Extra(
             String entryPoint,
             String department,
@@ -123,7 +127,8 @@ public class CrossingQueries {
             String flipBy,
             String flipReason,
             String voidBy,
-            String voidReason) {}
+            String voidReason,
+            String faceCrop) {}
 
     /** The attendance day of an identified crossing. */
     public record Day(
@@ -269,7 +274,7 @@ public class CrossingQueries {
                         SELECT ep.name AS entry_point, d.name::text AS department, c.shift_day, c.quality::text AS quality,
                                c.track_id, r.code AS review_code, r.status AS review_status, rb.display_name AS resolved_by,
                                c.resolved_at, fe.display_name AS flip_by, f.reason AS flip_reason,
-                               ve.display_name AS void_by, v.reason AS void_reason
+                               ve.display_name AS void_by, v.reason AS void_reason, c.face_crop_path
                           FROM attend.crossing c
                           JOIN attend.camera cam ON cam.id = c.camera_id
                           JOIN attend.entry_point ep ON ep.id = cam.entry_point_id
@@ -303,7 +308,8 @@ public class CrossingQueries {
                         rs.getString("flip_by"),
                         rs.getString("flip_reason"),
                         rs.getString("void_by"),
-                        rs.getString("void_reason")))
+                        rs.getString("void_reason"),
+                        rs.getString("face_crop_path")))
                 .single();
     }
 

@@ -90,9 +90,10 @@ export function wizardReducer(state: WizardState, action: WizardAction): WizardS
         consentLoaded: action.loaded ?? state.consentLoaded,
       };
     case 'method':
-      return { ...state, method: action.method };
+      // A capture at an entry point always adds to the existing templates.
+      return { ...state, method: action.method, mode: action.method === 'CAMERA' ? 'ADD' : state.mode };
     case 'mode':
-      return { ...state, mode: action.mode };
+      return { ...state, mode: state.method === 'CAMERA' ? 'ADD' : action.mode };
     case 'session': {
       // A new session (another method) starts without captures.
       const fresh = state.session?.code !== action.session.code;

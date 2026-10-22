@@ -56,6 +56,8 @@ class TrackState:
     direction: Direction | None = None
     #: Shown once the crossing assigned an unknown-face cluster, e.g. "Unknown #A3".
     unknown_label: str | None = None
+    #: Seen alone during an enrolment capture, or gave it a sample: its crossings are recorded, not counted.
+    enrolment_capture: bool = False
 
     def offer_face(self, sample: FaceSample) -> None:
         """Keep the best face: one that passed the gate beats one that did not, then the higher quality."""

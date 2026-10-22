@@ -43,7 +43,8 @@ public class CrossingTimelines {
                         r.method() == null ? null : CrossingMethod.valueOf(r.method()),
                         new PunchRulesEngine.Camera(r.cameraCode(), r.cameraName(), CameraMode.valueOf(r.cameraMode())),
                         r.uTurn(),
-                        r.voided() ? new PunchRulesEngine.Voided(r.voidedBy(), r.voidReason()) : null))
+                        r.voided() ? new PunchRulesEngine.Voided(r.voidedBy(), r.voidReason()) : null,
+                        r.enrolmentCapture()))
                 .toList();
     }
 

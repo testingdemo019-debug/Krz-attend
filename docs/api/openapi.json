@@ -1776,6 +1776,35 @@
         "x-permission" : "attendance.edit"
       }
     },
+    "/api/v1/crossings/{code}/template" : {
+      "post" : {
+        "operationId" : "addTemplate",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "code",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "pattern" : "^EV-\\d{6,}$"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CrossingViews.EventDetail"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Add the identified crossing's face crop as the employee's face template",
+        "tags" : [ "crossing-controller" ],
+        "x-permission" : "events.view+people.enrol"
+      }
+    },
     "/api/v1/dashboard" : {
       "get" : {
         "operationId" : "dashboard",
@@ -2927,6 +2956,59 @@
         "x-permission" : "people.view.sensitive"
       }
     },
+    "/api/v1/enrolment/cameras" : {
+      "get" : {
+        "operationId" : "captureCameras",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/EnrolmentViews.CaptureCamera"
+                  }
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "The enabled cameras a capture at an entry point can use",
+        "tags" : [ "enrolment-controller" ],
+        "x-permission" : "people.enrol"
+      }
+    },
+    "/api/v1/enrolment/cameras/{cameraCode}/snapshot" : {
+      "get" : {
+        "operationId" : "cameraSnapshot",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "cameraCode",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "pattern" : "^CAM-\\d{2,}$"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "image/jpeg" : {
+                "schema" : {
+                  "type" : "string",
+                  "format" : "byte"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "The camera's latest picture while capturing at its entry point (never cached)",
+        "tags" : [ "enrolment-controller" ],
+        "x-permission" : "people.enrol"
+      }
+    },
     "/api/v1/enrolment/lockouts/{employeeId}/unlock" : {
       "post" : {
         "operationId" : "unlock",
@@ -3103,6 +3185,101 @@
         "x-permission" : "people.enrol"
       }
     },
+    "/api/v1/enrolment/sessions/{code}/capture" : {
+      "get" : {
+        "operationId" : "captureStatus",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "code",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "pattern" : "^ES-\\d{6,}$"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/EnrolmentViews.CaptureStatus"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "What the capture at the entry point holds so far: angle groups and people in view",
+        "tags" : [ "enrolment-controller" ],
+        "x-permission" : "people.enrol"
+      },
+      "post" : {
+        "operationId" : "startCapture",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "code",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "pattern" : "^ES-\\d{6,}$"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/EnrolmentController.CaptureStartRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/EnrolmentViews.CaptureStatus"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Start capturing the person's face at the camera of an entry point (method CAMERA)",
+        "tags" : [ "enrolment-controller" ],
+        "x-permission" : "people.enrol"
+      }
+    },
+    "/api/v1/enrolment/sessions/{code}/capture/stop" : {
+      "post" : {
+        "operationId" : "stopCapture",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "code",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "pattern" : "^ES-\\d{6,}$"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/EnrolmentViews.Session"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Stop the capture at the entry point; its samples become the session's captures",
+        "tags" : [ "enrolment-controller" ],
+        "x-permission" : "people.enrol"
+      }
+    },
     "/api/v1/enrolment/sessions/{code}/captures" : {
       "post" : {
         "operationId" : "capture",
@@ -3189,6 +3366,44 @@
           }
         },
         "summary" : "Remove a capture",
+        "tags" : [ "enrolment-controller" ],
+        "x-permission" : "people.enrol"
+      }
+    },
+    "/api/v1/enrolment/sessions/{code}/captures/{captureId}/image" : {
+      "get" : {
+        "operationId" : "captureImage",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "code",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "pattern" : "^ES-\\d{6,}$"
+          }
+        }, {
+          "in" : "path",
+          "name" : "captureId",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "image/jpeg" : {
+                "schema" : {
+                  "type" : "string",
+                  "format" : "byte"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "A capture's image (never cached)",
         "tags" : [ "enrolment-controller" ],
         "x-permission" : "people.enrol"
       }
@@ -9526,6 +9741,13 @@
               "type" : "null"
             } ]
           },
+          "template" : {
+            "anyOf" : [ {
+              "$ref" : "#/components/schemas/CrossingViews.TemplateOffer"
+            }, {
+              "type" : "null"
+            } ]
+          },
           "trackId" : {
             "type" : [ "integer", "null" ],
             "format" : "int32"
@@ -9538,7 +9760,7 @@
             } ]
           }
         },
-        "required" : [ "attendance", "bodyMatch", "changes", "department", "entryPoint", "event", "faceMatch", "flip", "matchedIn", "punches", "quality", "resolvedAt", "resolvedBy", "review", "trackId", "voided" ]
+        "required" : [ "attendance", "bodyMatch", "changes", "department", "entryPoint", "event", "faceMatch", "flip", "matchedIn", "punches", "quality", "resolvedAt", "resolvedBy", "review", "template", "trackId", "voided" ]
       },
       "CrossingViews.EventRow" : {
         "type" : "object",
@@ -9724,6 +9946,18 @@
           }
         },
         "required" : [ "code", "status" ]
+      },
+      "CrossingViews.TemplateOffer" : {
+        "type" : "object",
+        "properties" : {
+          "ok" : {
+            "type" : "boolean"
+          },
+          "why" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "ok", "why" ]
       },
       "DashboardViews.Alert" : {
         "type" : "object",
@@ -10880,6 +11114,9 @@
             "type" : "integer",
             "format" : "int64"
           },
+          "light" : {
+            "type" : [ "string", "null" ]
+          },
           "pose" : {
             "type" : [ "string", "null" ]
           },
@@ -10894,7 +11131,7 @@
             "type" : [ "string", "null" ]
           }
         },
-        "required" : [ "createdAt", "id", "pose", "quality", "source", "thumbnailUrl" ]
+        "required" : [ "createdAt", "id", "light", "pose", "quality", "source", "thumbnailUrl" ]
       },
       "EmploymentService.Saved" : {
         "type" : "object",
@@ -10908,6 +11145,22 @@
           }
         },
         "required" : [ "changed", "employee" ]
+      },
+      "EnrolmentController.CaptureStartRequest" : {
+        "type" : "object",
+        "properties" : {
+          "cameraCode" : {
+            "type" : "string",
+            "pattern" : "^CAM-\\d{2,}$"
+          },
+          "seconds" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32",
+            "maximum" : 180,
+            "minimum" : 10
+          }
+        },
+        "required" : [ "cameraCode", "seconds" ]
       },
       "EnrolmentController.CompleteRequest" : {
         "type" : "object",
@@ -10940,7 +11193,7 @@
           },
           "method" : {
             "type" : "string",
-            "enum" : [ "LIVE", "UPLOAD" ]
+            "enum" : [ "LIVE", "UPLOAD", "CAMERA" ]
           }
         },
         "required" : [ "employeeId", "method" ]
@@ -11048,6 +11301,9 @@
             "type" : "integer",
             "format" : "int64"
           },
+          "light" : {
+            "type" : [ "string", "null" ]
+          },
           "livenessPassed" : {
             "type" : [ "boolean", "null" ]
           },
@@ -11065,7 +11321,62 @@
             "type" : [ "string", "null" ]
           }
         },
-        "required" : [ "accepted", "createdAt", "id", "livenessPassed", "pose", "quality", "rejectReason" ]
+        "required" : [ "accepted", "createdAt", "id", "light", "livenessPassed", "pose", "quality", "rejectReason" ]
+      },
+      "EnrolmentViews.CaptureCamera" : {
+        "type" : "object",
+        "properties" : {
+          "code" : {
+            "type" : "string"
+          },
+          "entryPoint" : {
+            "type" : [ "string", "null" ]
+          },
+          "name" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "code", "entryPoint", "name" ]
+      },
+      "EnrolmentViews.CaptureGroup" : {
+        "type" : "object",
+        "properties" : {
+          "group" : {
+            "type" : "string"
+          },
+          "samples" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/EnrolmentViews.CaptureGroupSample"
+            }
+          }
+        },
+        "required" : [ "group", "samples" ]
+      },
+      "EnrolmentViews.CaptureGroupSample" : {
+        "type" : "object",
+        "properties" : {
+          "eyePx" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "light" : {
+            "type" : [ "string", "null" ]
+          },
+          "pitch" : {
+            "type" : [ "number", "null" ],
+            "format" : "double"
+          },
+          "score" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "yaw" : {
+            "type" : [ "number", "null" ],
+            "format" : "double"
+          }
+        },
+        "required" : [ "eyePx", "light", "pitch", "score", "yaw" ]
       },
       "EnrolmentViews.CaptureResult" : {
         "type" : "object",
@@ -11087,6 +11398,36 @@
           }
         },
         "required" : [ "capture", "failedAttempts", "goodCaptures", "lockedUntil" ]
+      },
+      "EnrolmentViews.CaptureStatus" : {
+        "type" : "object",
+        "properties" : {
+          "crowded" : {
+            "type" : "boolean"
+          },
+          "groups" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/EnrolmentViews.CaptureGroup"
+            }
+          },
+          "otherPerson" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "people" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "secondsLeft" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "crowded", "groups", "otherPerson", "people", "secondsLeft", "status" ]
       },
       "EnrolmentViews.Completed" : {
         "type" : "object",
@@ -11280,6 +11621,9 @@
             "type" : "integer",
             "format" : "int32"
           },
+          "cameraCode" : {
+            "type" : [ "string", "null" ]
+          },
           "captures" : {
             "type" : "array",
             "items" : {
@@ -11329,7 +11673,7 @@
             "format" : "int32"
           }
         },
-        "required" : [ "activeNotice", "captures", "code", "consent", "employee", "expiresAt", "faceStatus", "goodCaptures", "livenessFailures", "lockedUntil", "method", "minGood", "status", "templates" ]
+        "required" : [ "activeNotice", "cameraCode", "captures", "code", "consent", "employee", "expiresAt", "faceStatus", "goodCaptures", "livenessFailures", "lockedUntil", "method", "minGood", "status", "templates" ]
       },
       "EnrolmentViews.TemplateRef" : {
         "type" : "object",

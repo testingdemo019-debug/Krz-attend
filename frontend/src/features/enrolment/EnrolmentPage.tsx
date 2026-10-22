@@ -10,6 +10,7 @@ import { useSearchParams } from 'react-router';
 import { ApiError } from '@/api/client';
 import {
   cancelSession,
+  captureImageUrl,
   useActiveNotice,
   useCompleteEnrolment,
   useEnrolmentCandidate,
@@ -28,6 +29,7 @@ import { Skeleton } from '@/components/ui/Skeleton';
 import { Steps } from '@/components/ui/Steps';
 import { useMeUser } from '@/lib/permissions';
 import { ConsentStep } from './ConsentStep';
+import { EntryCaptureStep, entryCaptureLabel } from './EntryCaptureStep';
 import { LiveCapture } from './LiveCapture';
 import { MethodStep } from './MethodStep';
 import { ReviewStep } from './ReviewStep';
@@ -308,6 +310,23 @@ export function EnrolmentPage() {
         pending={start.isPending}
       />
     );
+  } else if (state.step === 4 && session.method === 'CAMERA') {
+    body = (
+      <EntryCaptureStep
+        candidate={candidate}
+        session={session}
+        rules={rules}
+        onSession={next => {
+          dispatch({ type: 'session', session: next });
+        }}
+        onBack={() => {
+          go(3);
+        }}
+        onNext={() => {
+          go(5);
+        }}
+      />
+    );
   } else if (state.step === 4) {
     body =
       session.method === 'LIVE' ? (
@@ -363,16 +382,26 @@ export function EnrolmentPage() {
         />
       );
   } else if (state.step === 5) {
+    const camera = session.method === 'CAMERA';
     body = (
       <ReviewStep
         candidate={candidate}
         code={session.code}
         rules={rules}
         captures={goodCaptures(state)}
-        images={state.images}
-        names={state.names}
+        images={
+          camera
+            ? Object.fromEntries(session.captures.map(c => [c.id, captureImageUrl(session.code, c.id)]))
+            : state.images
+        }
+        names={
+          camera
+            ? Object.fromEntries(session.captures.map(c => [c.id, entryCaptureLabel(c.pose, c.light)]))
+            : state.names
+        }
         poses={state.poses}
         live={session.method === 'LIVE'}
+        needed={camera && candidate.templates.length >= rules.minGood ? 1 : rules.minGood}
         dupConfirm={state.dupConfirm}
         onDupConfirm={value => {
           dispatch({ type: 'dupConfirm', value });
@@ -409,7 +438,8 @@ export function EnrolmentPage() {
         rules={rules}
         consent={state.consent}
         good={goodCaptures(state).length}
-        method={session.method === 'UPLOAD' ? 'UPLOAD' : 'LIVE'}
+        method={session.method === 'UPLOAD' || session.method === 'CAMERA' ? session.method : 'LIVE'}
+        cameraCode={session.cameraCode ?? null}
         mode={state.mode}
         guidance={state.guidance}
         pending={complete.isPending}

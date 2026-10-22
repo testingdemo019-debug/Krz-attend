@@ -36,6 +36,9 @@ public final class PunchRulesEngine {
     private static final Duration BREAK_DEDUCTED_FROM = Duration.ofMinutes(300);
 
     private static final String U_TURN = "U-turn at the tripwire — crossed and came back within a few seconds";
+    /** A walk while capturing the person's face at the entry point (D-118). */
+    private static final String ENROLMENT_CAPTURE = "Enrolment capture at the entry point — recorded only";
+
     private static final String TESTER_CAMERA_CODE = "TEST";
     private static final DateTimeFormatter PAYLOAD_TIMESTAMP = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssXXX");
 
@@ -52,6 +55,7 @@ public final class PunchRulesEngine {
      * @param code EV-100231
      * @param direction after any flip correction
      * @param voided null unless voided
+     * @param enrolmentCapture a walk while the person's face was being captured at the entry point (D-118)
      */
     public record Crossing(
             long id,
@@ -61,12 +65,26 @@ public final class PunchRulesEngine {
             CrossingMethod method,
             Camera camera,
             boolean uTurn,
-            Voided voided) {
+            Voided voided,
+            boolean enrolmentCapture) {
 
         public Crossing {
             Objects.requireNonNull(ts);
             Objects.requireNonNull(direction);
             Objects.requireNonNull(camera);
+        }
+
+        /** A crossing outside an enrolment capture. */
+        public Crossing(
+                long id,
+                String code,
+                Instant ts,
+                Direction direction,
+                CrossingMethod method,
+                Camera camera,
+                boolean uTurn,
+                Voided voided) {
+            this(id, code, ts, direction, method, camera, uTurn, voided, false);
         }
     }
 
@@ -327,6 +345,11 @@ public final class PunchRulesEngine {
      * @param reviewCode the open review item (RV-2041) of a pending crossing
      * @param unknownHours privacy setting {@code unknownHours}
      */
+    /** The effect of an enrolment capture walk by someone not (yet) recognised: recorded, never a review item. */
+    public static PunchEffect enrolmentCapture() {
+        return new PunchEffect(Effect.MOVEMENT, ENROLMENT_CAPTURE);
+    }
+
     public static PunchEffect unidentified(boolean uTurn, Decision decision, String reviewCode, int unknownHours) {
         if (uTurn) {
             return new PunchEffect(Effect.IGNORED_TURNED_BACK, U_TURN);
@@ -524,7 +547,10 @@ public final class PunchRulesEngine {
                     times);
         }
 
-        /** 1. Voided, U-turns, directions the camera does not count, and crossings outside the shift day's window. */
+        /**
+         * 1. Voided, U-turns, enrolment capture walks, directions the camera does not count, and crossings outside the
+         * shift day's window.
+         */
         private List<Crossing> preFilter(List<Crossing> sorted) {
             List<Crossing> live = new ArrayList<>();
             for (Crossing c : sorted) {
@@ -535,6 +561,8 @@ public final class PunchRulesEngine {
                             "Voided by " + c.voided().by() + ": " + c.voided().reason());
                 } else if (c.uTurn()) {
                     set(c, Effect.IGNORED_TURNED_BACK, U_TURN);
+                } else if (c.enrolmentCapture()) {
+                    set(c, Effect.MOVEMENT, ENROLMENT_CAPTURE);
                 } else if (!c.camera().mode().allows(c.direction())) {
                     set(
                             c,

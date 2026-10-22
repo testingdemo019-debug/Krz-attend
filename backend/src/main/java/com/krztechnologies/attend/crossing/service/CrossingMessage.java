@@ -22,6 +22,8 @@ import tools.jackson.databind.json.JsonMapper;
  * @param employeeId the identity (AUTO) or the top candidate; null when empty
  * @param quality JSON object of the best face frame, or null
  * @param candidates JSON array of the top candidates, or null
+ * @param enrolmentCapture a walk while the person's face was being captured at the entry point (optional field,
+ *     absent = false; D-118): recorded, never counted, never a review item
  */
 public record CrossingMessage(
         UUID crossingUid,
@@ -50,7 +52,8 @@ public record CrossingMessage(
         Integer trackId,
         String modelVersion,
         String workerId,
-        String traceId) {
+        String traceId,
+        boolean enrolmentCapture) {
 
     /** The schema version this backend reads. */
     public static final String VERSION = "1";
@@ -144,7 +147,8 @@ public record CrossingMessage(
                 f.count("track_id", Integer.MAX_VALUE),
                 f.text("model_version", 200),
                 f.shortText("worker_id"),
-                f.shortText("trace_id"));
+                f.shortText("trace_id"),
+                f.optional("enrolment_capture") != null && f.bool("enrolment_capture"));
     }
 
     /** "Unknown #A3" for the cluster {@code 2026-10-12:A3}, or null. */

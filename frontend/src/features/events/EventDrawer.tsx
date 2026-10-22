@@ -1,11 +1,12 @@
 /**
  * The prototype's crossing drawer (openEventDrawer): who and what the rules did, the crossing's facts, its
- * attendance day, the HRMS punches and the changes, with Flip and Void for attendance.edit.
+ * attendance day, the HRMS punches and the changes, with Flip and Void for attendance.edit, and (people.enrol) the
+ * face crop as a template (D-118).
  */
 import { useEffect } from 'react';
 import { Link } from 'react-router';
 import { ApiError } from '@/api/client';
-import { useCrossing, type EventDetail } from '@/api/crossings';
+import { useCrossing, useCrossingTemplate, type EventDetail } from '@/api/crossings';
 import {
   AttendanceStatusChip,
   ConfidenceBadge,
@@ -32,6 +33,41 @@ import { usePermissionCheck, useNeedsPermissionText } from '@/lib/permissions';
 import { useCorrectionFlow } from '@/features/attendance/useCorrection';
 import '@/components/data/DataTable.module.css';
 import '@/components/domain/Timeline.module.css';
+
+/**
+ * "Add face crop as template" (D-118): a clear face of an identified crossing becomes the employee's template, so walks
+ * seen from this camera's angle and light match better. The server says why when it can't.
+ */
+function TemplateFromCrossing({
+  code,
+  name,
+  offer,
+}: {
+  code: string;
+  name: string;
+  offer: NonNullable<EventDetail['template']>;
+}) {
+  const add = useCrossingTemplate();
+  const first = name.split(' ')[0] ?? name;
+  return (
+    <div className="row wrap gap-8 mt-8" style={{ alignItems: 'center' }}>
+      <Button
+        size="sm"
+        icon="scanface"
+        disabled={!offer.ok || add.isPending}
+        onClick={() => {
+          add.mutate(code, {
+            onSuccess: () => toast(`Face crop added to ${first}’s face templates`, { type: 'success', logged: true }),
+            onError: error => toast(error.message, { type: 'error' }),
+          });
+        }}
+      >
+        Add face crop as template
+      </Button>
+      <span className="xs muted">{offer.why}</span>
+    </div>
+  );
+}
 
 function Body({ d, onOpenDay }: { d: EventDetail; onOpenDay: (employeeId: string, day: string) => void }) {
   const can = usePermissionCheck();
@@ -160,6 +196,7 @@ function Body({ d, onOpenDay }: { d: EventDetail; onOpenDay: (employeeId: string
           <QualityChips quality={d.quality} />
         </div>
       )}
+      {person && d.template && <TemplateFromCrossing code={ev.code} name={person.name} offer={d.template} />}
       {person && d.attendance && (
         <>
           <h3 className="mt-16 mb-8">Attendance</h3>

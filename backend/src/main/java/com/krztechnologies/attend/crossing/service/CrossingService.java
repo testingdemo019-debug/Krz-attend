@@ -1,6 +1,10 @@
 package com.krztechnologies.attend.crossing.service;
 
+import com.krztechnologies.attend.common.audit.AuditActor;
+import com.krztechnologies.attend.common.audit.AuditCategory;
+import com.krztechnologies.attend.common.audit.AuditService;
 import com.krztechnologies.attend.common.error.Errors;
+import com.krztechnologies.attend.common.security.AttendPrincipal;
 import com.krztechnologies.attend.common.security.CurrentUser;
 import com.krztechnologies.attend.common.security.Permission;
 import com.krztechnologies.attend.common.time.TimeService;
@@ -8,6 +12,7 @@ import com.krztechnologies.attend.common.web.PageRequestSpec;
 import com.krztechnologies.attend.common.web.PageResponse;
 import com.krztechnologies.attend.crossing.repository.CrossingQueries;
 import com.krztechnologies.attend.employee.service.EmployeeDirectory;
+import com.krztechnologies.attend.enrolment.service.TemplateService;
 import com.krztechnologies.attend.recognition.service.ActiveThresholds;
 import com.krztechnologies.attend.recognition.service.ConfidenceBands;
 import com.krztechnologies.attend.recognition.service.RecognitionService;
@@ -25,7 +30,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.json.JsonMapper;
 
-/** The Events page: crossings with filters (default yesterday and today), a crossing's detail, the CSV rows. */
+/**
+ * The Events page: crossings with filters (default yesterday and today), a crossing's detail, the CSV rows, and a face
+ * template from an identified crossing's crop (D-118).
+ */
 @Service
 public class CrossingService {
 
@@ -41,6 +49,8 @@ public class CrossingService {
     private final CrossingDecisions decisions;
     private final EmployeeDirectory employees;
     private final RecognitionService recognition;
+    private final TemplateService templates;
+    private final AuditService audit;
     private final CurrentUser currentUser;
     private final TimeService time;
     private final JsonMapper json;
@@ -50,6 +60,8 @@ public class CrossingService {
             CrossingDecisions decisions,
             EmployeeDirectory employees,
             RecognitionService recognition,
+            TemplateService templates,
+            AuditService audit,
             CurrentUser currentUser,
             TimeService time,
             JsonMapper json) {
@@ -57,9 +69,42 @@ public class CrossingService {
         this.decisions = decisions;
         this.employees = employees;
         this.recognition = recognition;
+        this.templates = templates;
+        this.audit = audit;
         this.currentUser = currentUser;
         this.time = time;
         this.json = json;
+    }
+
+    /**
+     * Adds the identified crossing's face crop as the employee's face template (D-118): consent on file, a clear and
+     * nearly frontal face, not already a template, not looking like another employee, and never one's own profile.
+     */
+    @Transactional
+    public CrossingViews.EventDetail addTemplate(String code) {
+        CrossingQueries.Row row = queries.one(code).orElseThrow(() -> new Errors.NotFound("Crossing not found."));
+        if (row.employeeId() == null) {
+            throw new Errors.BusinessRule(
+                    "TEMPLATE_NOT_ELIGIBLE", "Only a crossing with a recognised employee can give a face template.");
+        }
+        AttendPrincipal me = currentUser.require();
+        AuditActor actor = AuditActor.employee(me.employeeId(), me.displayName());
+        templates.addFromCrossing(
+                row.employeeId(), row.employeeName(), row.id(), row.code(), crop(row, queries.extra(row.id())), actor);
+        audit.record(
+                actor,
+                AuditCategory.ENROLMENT,
+                "Added a face template from a crossing",
+                row.employeeName(),
+                null,
+                row.code(),
+                null);
+        return detail(code);
+    }
+
+    private static TemplateService.Crop crop(CrossingQueries.Row row, CrossingQueries.Extra extra) {
+        return new TemplateService.Crop(
+                extra.faceCrop(), extra.quality(), "REID".equals(row.method()), row.cropsPurged());
     }
 
     /**
@@ -222,6 +267,16 @@ public class CrossingService {
                         .map(CrossingDecisions.InCrossing::occurredAt)
                         .orElse(null)
                 : null;
+        CrossingViews.TemplateOffer template = null;
+        if (row.employeeId() != null && row.hasFaceCrop() && currentUser.has(Permission.PEOPLE_ENROL)) {
+            var offer = templates.offer(
+                    row.employeeId(),
+                    row.employeeName(),
+                    row.id(),
+                    crop(row, extra),
+                    currentUser.require().employeeId());
+            template = new CrossingViews.TemplateOffer(offer.ok(), offer.why());
+        }
         return new CrossingViews.EventDetail(
                 mapper().row(row),
                 extra.entryPoint(),
@@ -245,7 +300,8 @@ public class CrossingService {
                         .toList(),
                 queries.history(row.code(), HISTORY_LIMIT).stream()
                         .map(h -> new CrossingViews.ChangeRow(h.at(), h.action(), h.actor(), h.after()))
-                        .toList());
+                        .toList(),
+                template);
     }
 
     private static CrossingViews.Match match(BigDecimal score, ConfidenceBands bands, boolean showScores) {

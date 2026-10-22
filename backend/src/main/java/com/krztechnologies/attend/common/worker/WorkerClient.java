@@ -343,6 +343,131 @@ public class WorkerClient {
         return new CalibrationStatus(text(body, "status"), List.copyOf(crossings));
     }
 
+    /**
+     * The template bar of a capture at an entry point (D-118).
+     *
+     * @param maxYaw the recognition profile's largest head turn (degrees)
+     */
+    public record CaptureRules(int minEyePx, int minQuality, int minSharp, double maxYaw) {}
+
+    /** A sample an angle group holds while the capture runs (no image). */
+    public record CaptureSampleSummary(Integer score, Integer eyePx, Double yaw, Double pitch, String light) {}
+
+    /**
+     * {@code GET /v1/cameras/{code}/captures/{session}}.
+     *
+     * @param status running, completed or stopped
+     * @param people people in view in the last analysed picture
+     * @param crowded more than one person was in view in the last two seconds
+     * @param otherPerson samples refused because they looked like someone else
+     * @param groups FRONT, TURN_LEFT, TURN_RIGHT and CHIN_DOWN, each with its samples, best first
+     */
+    public record CaptureStatus(
+            String status,
+            int secondsLeft,
+            int people,
+            boolean crowded,
+            int otherPerson,
+            Map<String, List<CaptureSampleSummary>> groups) {}
+
+    /**
+     * One sample handed over when a capture stops.
+     *
+     * @param jpeg the face crop (never logged; the caller encrypts it)
+     * @param embedding the float32 vector as raw bytes (never logged; the caller encrypts it)
+     * @param light DAY, EVENING or NIGHT_IR
+     */
+    public record CaptureSample(
+            String group,
+            byte[] jpeg,
+            byte[] embedding,
+            Integer dim,
+            String model,
+            FaceQuality quality,
+            String light,
+            Boolean livenessPassed,
+            Double livenessScore) {}
+
+    /** Starts collecting face samples of the person in view of the camera for the enrolment session. */
+    public void startCapture(String cameraCode, String sessionCode, int seconds, CaptureRules rules) {
+        Map<String, Object> request = new LinkedHashMap<>();
+        request.put("session", sessionCode);
+        request.put("duration_s", seconds);
+        request.put("min_eye_px", rules.minEyePx());
+        request.put("min_quality", rules.minQuality());
+        request.put("min_sharp", rules.minSharp());
+        request.put("max_yaw", rules.maxYaw());
+        post(quick, "capture start", uri("/v1/cameras/{code}/captures", cameraCode), request);
+    }
+
+    public CaptureStatus captureStatus(String cameraCode, String sessionCode) {
+        URI uri = uri("/v1/cameras/{code}/captures/{session}", cameraCode, sessionCode);
+        JsonNode body = call(
+                "capture status",
+                () -> read(quick.get()
+                        .uri(uri)
+                        .header(TOKEN_HEADER, worker.token())
+                        .accept(MediaType.APPLICATION_JSON)
+                        .retrieve()
+                        .body(String.class)));
+        Map<String, List<CaptureSampleSummary>> groups = new LinkedHashMap<>();
+        for (var group : body.path("groups").properties()) {
+            List<CaptureSampleSummary> samples = new ArrayList<>();
+            for (JsonNode s : group.getValue()) {
+                samples.add(new CaptureSampleSummary(
+                        integer(s, "score"),
+                        integer(s, "eye_px"),
+                        number(s, "yaw"),
+                        number(s, "pitch"),
+                        text(s, "light")));
+            }
+            groups.put(group.getKey(), List.copyOf(samples));
+        }
+        return new CaptureStatus(
+                text(body, "status"),
+                body.path("seconds_left").asInt(0),
+                body.path("people").asInt(0),
+                body.path("crowded").asBoolean(false),
+                body.path("other_person").asInt(0),
+                groups);
+    }
+
+    /** Ends the capture and returns its samples, best first in each angle group. */
+    public List<CaptureSample> stopCapture(String cameraCode, String sessionCode) {
+        JsonNode body = post(
+                slow,
+                "capture stop",
+                uri("/v1/cameras/{code}/captures/{session}/stop", cameraCode, sessionCode),
+                Map.of());
+        List<CaptureSample> samples = new ArrayList<>();
+        for (JsonNode s : body.path("samples")) {
+            JsonNode q = s.path("quality");
+            JsonNode liveness = s.path("liveness");
+            String jpeg = text(s, "jpeg");
+            String vector = text(s, "embedding");
+            if (jpeg == null || vector == null) {
+                throw new WorkerException("WORKER_ERROR");
+            }
+            samples.add(new CaptureSample(
+                    text(s, "group"),
+                    decode(jpeg),
+                    decode(vector),
+                    integer(s, "dim"),
+                    text(s, "model"),
+                    new FaceQuality(
+                            integer(q, "eye_px"),
+                            number(q, "yaw"),
+                            number(q, "pitch"),
+                            integer(q, "sharp"),
+                            integer(q, "brightness"),
+                            integer(q, "score")),
+                    text(s, "light"),
+                    liveness.isObject() ? liveness.path("passed").asBoolean(false) : null,
+                    liveness.isObject() ? number(liveness, "score") : null));
+        }
+        return List.copyOf(samples);
+    }
+
     private JsonNode post(RestClient client, String what, URI uri, Map<String, Object> request) {
         String payload = json.writeValueAsString(request);
         return call(

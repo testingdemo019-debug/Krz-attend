@@ -44,6 +44,9 @@ import {
   DEACTIVATE_REASONS,
   EMPLOYMENT_TYPES,
   ERASE_REASONS,
+  CAMERA_TEMPLATE_SOURCES,
+  PROFILE_HISTORY_ACTIONS,
+  TEMPLATE_LIGHTS,
   TEMPLATE_POSES,
   TEMPLATE_SOURCES,
   term,
@@ -458,10 +461,16 @@ function FaceTab({ profile: p }: { profile: EmployeeProfile }) {
                 </span>
                 <span className="xs muted">
                   {fmtDate(t.createdAt)} · {term(TEMPLATE_SOURCES, t.source) ?? t.source}
+                  {t.light ? ` · ${term(TEMPLATE_LIGHTS, t.light) ?? t.light}` : ''}
                 </span>
               </div>
             ))}
           </div>
+        ) : null}
+        {f.templates.length > 0 ? (
+          f.templates.some(t => CAMERA_TEMPLATE_SOURCES.includes(t.source)) && (
+            <CameraCoverage templates={f.templates} />
+          )
         ) : (
           <EmptyState
             icon="scanface"
@@ -589,6 +598,33 @@ function AttendanceTab({ profile: p }: { profile: EmployeeProfile }) {
   );
 }
 
+/**
+ * Which angles and lights the attendance camera's own templates cover (capture at an entry point, review and crossing
+ * crops, D-118): what to capture next so walks at that angle or in that light match.
+ */
+function CameraCoverage({ templates }: { templates: EmployeeProfile['face']['templates'] }) {
+  const fromCamera = templates.filter(t => CAMERA_TEMPLATE_SOURCES.includes(t.source));
+  const has = (pose: string) => fromCamera.some(t => (t.pose ?? 'FRONT') === pose);
+  const lit = (light: string) => fromCamera.some(t => t.light === light);
+  return (
+    <div className="mt-12">
+      <div className="label mb-8">From the attendance camera</div>
+      <div className="row wrap gap-4">
+        {Object.entries(TEMPLATE_POSES).map(([key, label]) => (
+          <Chip key={key} tone={has(key) ? 'green' : 'grey'} icon={has(key) ? 'check' : 'minus'}>
+            {label}
+          </Chip>
+        ))}
+        {Object.entries(TEMPLATE_LIGHTS).map(([key, label]) => (
+          <Chip key={key} tone={lit(key) ? 'green' : 'grey'} icon={lit(key) ? 'check' : 'minus'}>
+            {label}
+          </Chip>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function ActivityTab({ profile: p }: { profile: EmployeeProfile }) {
   return (
     <Card>
@@ -599,7 +635,7 @@ function ActivityTab({ profile: p }: { profile: EmployeeProfile }) {
             return (
               <div key={`${a.at}-${n}`} className="tl-item">
                 <div className="small">
-                  <b>{a.action}</b> · {a.by}
+                  <b>{term(PROFILE_HISTORY_ACTIONS, a.action) ?? a.action}</b> · {a.by}
                 </div>
                 <div className="muted xs">
                   {fmtDateTime(a.at)}
