@@ -1,6 +1,7 @@
 /**
  * Drawing Live View overlays (F7, the prototype's drawWire and drawWalker labels): tripwire with the "Inside" arrow
- * and the zone from the camera's configuration, boxes and labels from the overlay stream. Pure functions on a 2D
+ * (or, on a doorway-zone camera, the door area; D-120) and the zone from the camera's configuration, boxes and labels
+ * from the overlay stream. Pure functions on a 2D
  * context, so the tile canvas and the snapshot draw exactly the same picture.
  */
 import type { LiveTile, OverlayFrame, OverlayTrack } from '@/api/live';
@@ -23,7 +24,7 @@ export const OVERLAY_OPTIONS: readonly (readonly [keyof OverlayOptions, string])
   ['names', 'Names'],
   ['track', 'Track ID'],
   ['conf', 'Confidence band'],
-  ['wire', 'Tripwire with inside arrow'],
+  ['wire', 'Tripwire or door area'],
   ['zone', 'Detection zone'],
   ['quality', 'Face-quality badge'],
 ];
@@ -81,10 +82,13 @@ export function containRect(boxW: number, boxH: number, mediaW: number, mediaH: 
 
 const at = (r: Rect, x: number, y: number): [number, number] => [r.x + x * r.w, r.y + y * r.h];
 
-/** The zone and the tripwire with its "Inside" arrow (Live View tiles and the camera editor). */
+/**
+ * The zone, and the camera's counting drawing: the tripwire with its "Inside" arrow, or the door area of a
+ * doorway-zone camera (Live View tiles and the camera editor).
+ */
 export function drawGeometry(
   ctx: CanvasRenderingContext2D,
-  camera: Pick<LiveTile, 'zone' | 'wire'>,
+  camera: Pick<LiveTile, 'zone' | 'wire' | 'countingMethod' | 'doorZone'>,
   r: Rect,
   options: Pick<OverlayOptions, 'zone' | 'wire'>,
 ): void {
@@ -103,6 +107,10 @@ export function drawGeometry(
     ctx.fillStyle = 'rgba(250,204,21,.06)';
     ctx.fill();
     ctx.setLineDash([]);
+  }
+  if (camera.countingMethod === 'DOORWAY_ZONE') {
+    if (options.wire) drawDoor(ctx, camera.doorZone, r);
+    return;
   }
   const wire = camera.wire;
   if (!options.wire || !wire) return;
@@ -140,6 +148,32 @@ export function drawGeometry(
   ctx.fillRect(lx - 4, ly - fs / 2 - 3, lw + 8, fs + 4);
   ctx.fillStyle = '#0b1220';
   ctx.fillText(text, lx, ly + fs / 2 - 2);
+}
+
+/** The door area: an outline in the tripwire's colour with a "Door" tag at its top. */
+function drawDoor(ctx: CanvasRenderingContext2D, door: readonly (readonly number[])[], r: Rect): void {
+  if (door.length < 3) return;
+  ctx.strokeStyle = WIRE;
+  ctx.lineWidth = Math.max(2, r.w * 0.003);
+  ctx.beginPath();
+  door.forEach(([x = 0, y = 0], i) => {
+    const [px, py] = at(r, x, y);
+    if (i) ctx.lineTo(px, py);
+    else ctx.moveTo(px, py);
+  });
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(56,189,248,.10)';
+  ctx.fill();
+  ctx.stroke();
+  const [tx, ty] = at(r, Math.min(...door.map(p => p[0] ?? 0)), Math.min(...door.map(p => p[1] ?? 0)));
+  const fs = Math.max(11, r.h * 0.036);
+  ctx.font = `700 ${fs}px system-ui`;
+  const text = 'Door';
+  const lw = ctx.measureText(text).width;
+  ctx.fillStyle = WIRE;
+  ctx.fillRect(tx, ty, lw + 8, fs + 4);
+  ctx.fillStyle = '#0b1220';
+  ctx.fillText(text, tx + 4, ty + fs);
 }
 
 /** The label as the prototype builds it: name (or Known / Re-ID match without names), band, track ID, direction. */

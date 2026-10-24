@@ -82,6 +82,14 @@ function columns(cameras: number): readonly Column<EventRow>[] {
               <Tag title={`Direction corrected from ${r.flippedFrom}`}>flipped</Tag>
             </>
           )}
+          {r.directionUnsure && !r.flippedFrom && (
+            <>
+              {' '}
+              <Tag title="Doorway zone: no check supported this direction. Check the picture and flip it if it is wrong.">
+                direction unsure
+              </Tag>
+            </>
+          )}
         </>
       ),
     },

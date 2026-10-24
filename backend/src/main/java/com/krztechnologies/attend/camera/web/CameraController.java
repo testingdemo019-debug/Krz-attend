@@ -1,6 +1,7 @@
 package com.krztechnologies.attend.camera.web;
 
 import com.krztechnologies.attend.camera.domain.CameraGeometry;
+import com.krztechnologies.attend.camera.domain.CountingMethod;
 import com.krztechnologies.attend.camera.domain.Wire;
 import com.krztechnologies.attend.camera.service.CameraConnectionService;
 import com.krztechnologies.attend.camera.service.CameraHealthService;
@@ -33,8 +34,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * Settings → Cameras: cameras and their connection, password, zone and tripwire, test connection, snapshot, ONVIF
- * discovery, calibration test walks and health.
+ * Settings → Cameras: cameras and their connection, password, counting method with its tripwire or door area, zone,
+ * test connection, snapshot, ONVIF discovery, calibration test walks and health.
  */
 @RestController
 @RequestMapping("/api/v1/settings/cameras")
@@ -67,12 +68,18 @@ public class CameraController {
             String password) {}
 
     /**
+     * @param countingMethod LINE_CROSSING (the tripwire decides IN/OUT) or DOORWAY_ZONE (the door area does, D-120)
      * @param zone the detection zone [[x,y],…] normalised 0..1 (at least 3 points; empty = the whole image)
-     * @param wire the tripwire; null only in MONITOR mode
+     * @param wire the tripwire; a line-crossing camera needs one unless in MONITOR mode
+     * @param doorZone the door area [[x,y],…] normalised 0..1 (at least 3 points); a doorway-zone camera needs one
+     * @param confirmFrames frames past the line that confirm a crossing (line crossing only)
+     * @param ignoreUturnSec the U-turn window (line crossing only)
      */
     public record GeometryRequest(
+            @NotNull CountingMethod countingMethod,
             @Size(max = 20) List<List<Double>> zone,
             @Nullable @Valid Wire wire,
+            @Nullable @Size(max = 20) List<List<Double>> doorZone,
             @NotNull @Min(2) @Max(5) Integer confirmFrames,
             @NotNull @Min(3) @Max(10) Integer ignoreUturnSec,
             @NotNull Integer version) {}
@@ -132,14 +139,22 @@ public class CameraController {
         return connections.test(code);
     }
 
-    @Operation(summary = "Save the detection zone, tripwire, confirm frames and U-turn window")
+    @Operation(
+            summary =
+                    "Save the counting method, detection zone, tripwire or door area, confirm frames and U-turn window")
     @RequiresPermission(Permission.SETTINGS_CAMERAS)
     @PutMapping("/{code}/geometry")
     public CameraViews.CameraView setGeometry(
             @PathVariable @Pattern(regexp = CAMERA_CODE) String code, @Valid @RequestBody GeometryRequest request) {
         return cameras.setGeometry(
                 code,
-                new CameraGeometry(request.zone(), request.wire(), request.confirmFrames(), request.ignoreUturnSec()),
+                new CameraGeometry(
+                        request.countingMethod(),
+                        request.zone(),
+                        request.wire(),
+                        request.doorZone(),
+                        request.confirmFrames(),
+                        request.ignoreUturnSec()),
                 request.version());
     }
 

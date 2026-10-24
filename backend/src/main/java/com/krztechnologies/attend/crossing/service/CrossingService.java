@@ -358,7 +358,8 @@ public class CrossingService {
                     r.effectReason(),
                     r.hasFaceCrop(),
                     r.hasBodyCrop(),
-                    r.cropsPurged());
+                    r.cropsPurged(),
+                    r.directionUnsure());
         }
     }
 }

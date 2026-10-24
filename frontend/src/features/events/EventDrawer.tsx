@@ -144,9 +144,11 @@ function Body({ d, onOpenDay }: { d: EventDetail; onOpenDay: (employeeId: string
               <span className="muted small">
                 {d.flip && ev.flippedFrom
                   ? `(corrected from ${ev.flippedFrom} by ${d.flip.by}: ${d.flip.reason})`
-                  : back
-                    ? 'walking away from the camera'
-                    : 'facing the camera'}
+                  : ev.directionUnsure
+                    ? 'direction unsure (doorway zone) — check the picture, and flip it if it is wrong'
+                    : back
+                      ? 'walking away from the camera'
+                      : 'facing the camera'}
               </span>
             </>,
           ],

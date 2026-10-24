@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.json.JsonMapper;
 
-/** Converts a camera's zone and tripwire between the jsonb columns and {@link CameraGeometry}. */
+/** Converts a camera's zone, tripwire and door area between the jsonb columns and {@link CameraGeometry}. */
 @Component
 class GeometryJson {
 
@@ -21,17 +21,35 @@ class GeometryJson {
     }
 
     CameraGeometry of(Camera camera) {
-        List<List<Double>> zone = camera.getZone() == null ? List.of() : json.readValue(camera.getZone(), POLYGON);
         Wire wire = camera.getWire() == null ? null : json.readValue(camera.getWire(), Wire.class);
-        return new CameraGeometry(zone, wire, camera.getConfirmFrames(), camera.getIgnoreUturnSec());
+        return new CameraGeometry(
+                camera.getCountingMethod(),
+                polygon(camera.getZone()),
+                wire,
+                polygon(camera.getDoorZone()),
+                camera.getConfirmFrames(),
+                camera.getIgnoreUturnSec());
     }
 
     /** The zone column: null for "the whole image". */
     String zoneColumn(CameraGeometry geometry) {
-        return geometry.zone().isEmpty() ? null : json.writeValueAsString(geometry.zone());
+        return polygonColumn(geometry.zone());
+    }
+
+    /** The door area column: null when none is drawn. */
+    String doorZoneColumn(CameraGeometry geometry) {
+        return polygonColumn(geometry.doorZone());
     }
 
     String wireColumn(CameraGeometry geometry) {
         return geometry.wire() == null ? null : json.writeValueAsString(geometry.wire());
+    }
+
+    private List<List<Double>> polygon(String column) {
+        return column == null ? List.of() : json.readValue(column, POLYGON);
+    }
+
+    private String polygonColumn(List<List<Double>> polygon) {
+        return polygon.isEmpty() ? null : json.writeValueAsString(polygon);
     }
 }

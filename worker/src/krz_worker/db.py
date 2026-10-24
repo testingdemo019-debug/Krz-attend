@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Literal
 
 from psycopg.conninfo import make_conninfo
 from psycopg.rows import dict_row
@@ -16,9 +16,12 @@ from psycopg_pool import ConnectionPool
 
 from krz_worker.config import Settings
 from krz_worker.recognition.decision import Thresholds
+from krz_worker.tracking.doorway import FacesVisibleWhen
 from krz_worker.tracking.tripwire import Wire
 
 LOG = logging.getLogger(__name__)
+
+CountingMethod = Literal["LINE_CROSSING", "DOORWAY_ZONE"]
 
 
 @dataclass(frozen=True)
@@ -40,6 +43,15 @@ class CameraConfig:
     ignore_uturn_sec: int
     liveness_enabled: bool
     config_version: int
+    #: LINE_CROSSING (the tripwire) or DOORWAY_ZONE (the door area, D-120).
+    counting_method: CountingMethod = "LINE_CROSSING"
+    #: Normalised polygon around the door opening; used only by DOORWAY_ZONE.
+    door_zone: tuple[tuple[float, float], ...] = ()
+    faces_visible_when: FacesVisibleWhen = "ENTERING"
+
+    @property
+    def doorway(self) -> bool:
+        return self.counting_method == "DOORWAY_ZONE"
 
     @property
     def connection(self) -> tuple[object, ...]:
@@ -95,7 +107,8 @@ class Database:
             _camera(row)
             for row in self._rows(
                 "SELECT code, name, enabled, host, rtsp_port, onvif_port, main_path, username, password_enc, zone, "
-                "wire, confirm_frames, ignore_uturn_sec, liveness_enabled, config_version "
+                "wire, confirm_frames, ignore_uturn_sec, liveness_enabled, config_version, counting_method, door_zone, "
+                "faces_visible_when "
                 "FROM attend.v_worker_camera ORDER BY code"
             )
         ]
@@ -158,7 +171,7 @@ def _camera(r: dict[str, Any]) -> CameraConfig:
         main_path=r["main_path"],
         username=r["username"],
         password_enc=bytes(r["password_enc"]) if r["password_enc"] is not None else None,
-        zone=tuple((float(p[0]), float(p[1])) for p in (r["zone"] or [])),
+        zone=_polygon(r["zone"]),
         wire=(
             Wire(
                 (float(wire["a"][0]), float(wire["a"][1])),
@@ -172,4 +185,11 @@ def _camera(r: dict[str, Any]) -> CameraConfig:
         ignore_uturn_sec=int(r["ignore_uturn_sec"]),
         liveness_enabled=bool(r["liveness_enabled"]),
         config_version=int(r["config_version"]),
+        counting_method=r["counting_method"],
+        door_zone=_polygon(r["door_zone"]),
+        faces_visible_when=r["faces_visible_when"],
     )
+
+
+def _polygon(points: Any) -> tuple[tuple[float, float], ...]:
+    return tuple((float(p[0]), float(p[1])) for p in (points or []))

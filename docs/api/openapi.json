@@ -5851,7 +5851,7 @@
             "description" : "OK"
           }
         },
-        "summary" : "Save the detection zone, tripwire, confirm frames and U-turn window",
+        "summary" : "Save the counting method, detection zone, tripwire or door area, confirm frames and U-turn window",
         "tags" : [ "camera-controller" ],
         "x-permission" : "settings.cameras"
       }
@@ -8942,6 +8942,22 @@
             "maximum" : 5,
             "minimum" : 2
           },
+          "countingMethod" : {
+            "type" : "string",
+            "enum" : [ "LINE_CROSSING", "DOORWAY_ZONE" ]
+          },
+          "doorZone" : {
+            "type" : [ "array", "null" ],
+            "items" : {
+              "type" : "array",
+              "items" : {
+                "type" : "number",
+                "format" : "double"
+              }
+            },
+            "maxItems" : 20,
+            "minItems" : 0
+          },
           "ignoreUturnSec" : {
             "type" : "integer",
             "format" : "int32",
@@ -8972,7 +8988,7 @@
             "minItems" : 0
           }
         },
-        "required" : [ "confirmFrames", "ignoreUturnSec", "version", "wire", "zone" ]
+        "required" : [ "confirmFrames", "countingMethod", "doorZone", "ignoreUturnSec", "version", "wire", "zone" ]
       },
       "CameraController.PasswordRequest" : {
         "type" : "object",
@@ -9120,9 +9136,23 @@
             "type" : "integer",
             "format" : "int32"
           },
+          "countingMethod" : {
+            "type" : "string",
+            "enum" : [ "LINE_CROSSING", "DOORWAY_ZONE" ]
+          },
           "directionMode" : {
             "type" : "string",
             "enum" : [ "BOTH", "IN", "OUT", "MONITOR" ]
+          },
+          "doorZone" : {
+            "type" : "array",
+            "items" : {
+              "type" : "array",
+              "items" : {
+                "type" : "number",
+                "format" : "double"
+              }
+            }
           },
           "enabled" : {
             "type" : "boolean"
@@ -9230,7 +9260,7 @@
             }
           }
         },
-        "required" : [ "clockOffsetSec", "code", "codec", "configVersion", "confirmFrames", "directionMode", "enabled", "entryPoint", "facesVisibleWhen", "fps", "host", "ignoreUturnSec", "lastSeenAt", "latencyMs", "livenessEnabled", "mainPath", "mainStreamUrl", "model", "mountNote", "name", "onvifPort", "passwordSet", "passwordUpdatedAt", "resolution", "rtspPort", "status", "statusSince", "subPath", "subStreamUrl", "uptime7d", "username", "version", "wire", "zone" ]
+        "required" : [ "clockOffsetSec", "code", "codec", "configVersion", "confirmFrames", "countingMethod", "directionMode", "doorZone", "enabled", "entryPoint", "facesVisibleWhen", "fps", "host", "ignoreUturnSec", "lastSeenAt", "latencyMs", "livenessEnabled", "mainPath", "mainStreamUrl", "model", "mountNote", "name", "onvifPort", "passwordSet", "passwordUpdatedAt", "resolution", "rtspPort", "status", "statusSince", "subPath", "subStreamUrl", "uptime7d", "username", "version", "wire", "zone" ]
       },
       "CameraViews.DiscoveredCamera" : {
         "type" : "object",
@@ -9345,9 +9375,23 @@
           "code" : {
             "type" : "string"
           },
+          "countingMethod" : {
+            "type" : "string",
+            "enum" : [ "LINE_CROSSING", "DOORWAY_ZONE" ]
+          },
           "directionMode" : {
             "type" : "string",
             "enum" : [ "BOTH", "IN", "OUT", "MONITOR" ]
+          },
+          "doorZone" : {
+            "type" : "array",
+            "items" : {
+              "type" : "array",
+              "items" : {
+                "type" : "number",
+                "format" : "double"
+              }
+            }
           },
           "entryPoint" : {
             "type" : [ "string", "null" ]
@@ -9391,7 +9435,7 @@
             }
           }
         },
-        "required" : [ "code", "directionMode", "entryPoint", "fps", "latencyMs", "name", "resolution", "status", "statusSince", "wire", "zone" ]
+        "required" : [ "code", "countingMethod", "directionMode", "doorZone", "entryPoint", "fps", "latencyMs", "name", "resolution", "status", "statusSince", "wire", "zone" ]
       },
       "CameraViews.OutageView" : {
         "type" : "object",
@@ -9786,6 +9830,9 @@
           "direction" : {
             "type" : "string"
           },
+          "directionUnsure" : {
+            "type" : "boolean"
+          },
           "effect" : {
             "type" : [ "string", "null" ]
           },
@@ -9825,7 +9872,7 @@
             "type" : [ "string", "null" ]
           }
         },
-        "required" : [ "bodyCrop", "camera", "code", "confidence", "cropsPurged", "decision", "direction", "effect", "effectReason", "faceCrop", "flippedFrom", "liveness", "method", "occurredAt", "person", "score", "uTurn", "unknownLabel" ]
+        "required" : [ "bodyCrop", "camera", "code", "confidence", "cropsPurged", "decision", "direction", "directionUnsure", "effect", "effectReason", "faceCrop", "flippedFrom", "liveness", "method", "occurredAt", "person", "score", "uTurn", "unknownLabel" ]
       },
       "CrossingViews.Facets" : {
         "type" : "object",

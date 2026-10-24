@@ -1,6 +1,7 @@
 package com.krztechnologies.attend.camera.service;
 
 import com.krztechnologies.attend.camera.domain.CameraStatus;
+import com.krztechnologies.attend.camera.domain.CountingMethod;
 import com.krztechnologies.attend.camera.domain.Wire;
 import com.krztechnologies.attend.common.worker.WorkerClient;
 import com.krztechnologies.attend.rules.service.CameraMode;
@@ -22,8 +23,10 @@ public final class CameraViews {
      * A camera for Settings → Cameras. The password is never returned, only whether one is set.
      *
      * @param mainStreamUrl the main-stream RTSP URL with the password masked ({@code rtsp://user:••••@…})
+     * @param countingMethod how IN and OUT are decided: the tripwire or the door area (D-120)
      * @param zone the detection zone polygon, empty when the whole image is used
-     * @param wire the tripwire, null when none is set (MONITOR cameras)
+     * @param wire the tripwire, null when none is drawn
+     * @param doorZone the door area polygon, empty when none is drawn
      * @param fps frames per second of the latest heartbeat
      * @param uptime7d average uptime of the last 7 days in %, null before the first daily rollup
      */
@@ -47,8 +50,10 @@ public final class CameraViews {
             String subStreamUrl,
             boolean enabled,
             boolean livenessEnabled,
+            CountingMethod countingMethod,
             List<List<Double>> zone,
             @Nullable Wire wire,
+            List<List<Double>> doorZone,
             int confirmFrames,
             int ignoreUturnSec,
             CameraStatus status,
@@ -64,7 +69,8 @@ public final class CameraViews {
             int version) {}
 
     /**
-     * A Live View tile: status and the camera's geometry for the tripwire and zone overlays.
+     * A Live View tile: status and the camera's geometry for the overlays (the zone, and the tripwire or the door area
+     * by the counting method).
      *
      * @param entryPoint the entry point's name
      */
@@ -78,8 +84,10 @@ public final class CameraViews {
             @Nullable Integer latencyMs,
             @Nullable String resolution,
             CameraMode directionMode,
+            CountingMethod countingMethod,
             List<List<Double>> zone,
-            @Nullable Wire wire) {
+            @Nullable Wire wire,
+            List<List<Double>> doorZone) {
 
         /** No video (the status pill's "Camera offline"). */
         public boolean offline() {

@@ -1,6 +1,6 @@
 {
   "contract": "krz:crossings, schema v1 (backend prompt, Redis contract section 1)",
-  "usage": "Both the backend (CrossingMessage and CrossingIngestService tests) and the worker (stream producer tests) read this file. Every field is a string; an empty string means absent. Tests replace crossing_uid with a fresh UUID, and camera_code / employee_id with a real camera and an enrolled employee of their test data. 'expect' is the row the backend stores (the contract's mapping table); 'poison' messages go to krz:crossings:dead. enrolment_capture (D-118) is optional: absent means false.",
+  "usage": "Both the backend (CrossingMessage and CrossingIngestService tests) and the worker (stream producer tests) read this file. Every field is a string; an empty string means absent. Tests replace crossing_uid with a fresh UUID, and camera_code / employee_id with a real camera and an enrolled employee of their test data. 'expect' is the row the backend stores (the contract's mapping table); 'poison' messages go to krz:crossings:dead. enrolment_capture (D-118) and direction_unsure (D-120) are optional: absent means false.",
   "valid": [
     {
       "name": "Face match, IN, auto-accepted",
@@ -15,7 +15,7 @@
         "unknown_cluster": "", "face_crop": "2026/10/12/EV-face-01928a5e.enc", "face_crop_blur": "2026/10/12/EV-face-01928a5e.blur.enc",
         "body_crop": "", "body_crop_blur": "", "track_id": "17",
         "model_version": "yunet-2023mar+sface-2021dec+osnet-x1_0", "worker_id": "worker-1", "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
-        "enrolment_capture": "false"
+        "enrolment_capture": "false", "direction_unsure": "false"
       },
       "expect": { "identity": true, "method": "FACE", "decision": "AUTO", "reviewType": null }
     },
@@ -117,6 +117,17 @@
         "worker_id": "worker-1", "trace_id": "d4f92f3577b34da6a3ce929d0e0e4745", "enrolment_capture": "true"
       },
       "expect": { "identity": false, "method": null, "decision": "AUTO", "reviewType": null, "effect": "MOVEMENT", "enrolmentCapture": true }
+    },
+    {
+      "name": "Doorway-zone walk whose direction no check supported: counted, marked direction unsure",
+      "fields": {
+        "v": "1", "crossing_uid": "01928a5e-3c1f-7b2a-9d4e-5f6a7b8c9d11", "camera_code": "CAM-01",
+        "ts": "2026-10-12T04:05:00.000Z", "direction": "IN", "u_turn": "false", "decision_hint": "AUTO",
+        "method": "FACE", "employee_id": "0b6e3c1a-5d2f-4e8b-9a7c-1d2e3f4a5b6c", "score": "0.7400",
+        "liveness": "PASSED", "track_id": "71", "worker_id": "worker-1", "trace_id": "e5f92f3577b34da6a3ce929d0e0e4746",
+        "direction_unsure": "true"
+      },
+      "expect": { "identity": true, "method": "FACE", "decision": "AUTO", "reviewType": null, "directionUnsure": true }
     }
   ],
   "poison": [

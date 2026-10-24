@@ -24,6 +24,8 @@ import tools.jackson.databind.json.JsonMapper;
  * @param candidates JSON array of the top candidates, or null
  * @param enrolmentCapture a walk while the person's face was being captured at the entry point (optional field,
  *     absent = false; D-118): recorded, never counted, never a review item
+ * @param directionUnsure a doorway-zone walk whose direction no check supported (optional field, absent = false;
+ *     D-120): counted with the most likely direction and marked so it can be checked
  */
 public record CrossingMessage(
         UUID crossingUid,
@@ -53,7 +55,8 @@ public record CrossingMessage(
         String modelVersion,
         String workerId,
         String traceId,
-        boolean enrolmentCapture) {
+        boolean enrolmentCapture,
+        boolean directionUnsure) {
 
     /** The schema version this backend reads. */
     public static final String VERSION = "1";
@@ -148,7 +151,8 @@ public record CrossingMessage(
                 f.text("model_version", 200),
                 f.shortText("worker_id"),
                 f.shortText("trace_id"),
-                f.optional("enrolment_capture") != null && f.bool("enrolment_capture"));
+                f.optional("enrolment_capture") != null && f.bool("enrolment_capture"),
+                f.optional("direction_unsure") != null && f.bool("direction_unsure"));
     }
 
     /** "Unknown #A3" for the cluster {@code 2026-10-12:A3}, or null. */

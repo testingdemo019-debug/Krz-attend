@@ -143,7 +143,8 @@ public class CrossingIngestService {
                 m.trackId(),
                 m.workerId(),
                 m.traceId(),
-                capture));
+                capture,
+                m.directionUnsure()));
         if (stored.isEmpty()) {
             LOG.debug("Crossing {} was stored before (redelivery)", m.crossingUid());
             return Outcome.DUPLICATE;

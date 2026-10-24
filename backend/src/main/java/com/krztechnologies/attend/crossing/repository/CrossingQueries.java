@@ -39,7 +39,7 @@ public class CrossingQueries {
                    e.display_name AS employee_name, m.hrms_employee_id, c.decision, c.score, c.reid_score, c.liveness,
                    c.effect, c.effect_reason, c.unknown_label, cam.code AS camera_code, cam.name AS camera_name,
                    c.face_crop_path IS NOT NULL AS has_face_crop, c.body_crop_path IS NOT NULL AS has_body_crop,
-                   c.crops_purged_at IS NOT NULL AS crops_purged
+                   c.crops_purged_at IS NOT NULL AS crops_purged, c.direction_unsure
             """;
 
     private static final String FROM = """
@@ -107,7 +107,8 @@ public class CrossingQueries {
             String cameraName,
             boolean hasFaceCrop,
             boolean hasBodyCrop,
-            boolean cropsPurged) {}
+            boolean cropsPurged,
+            boolean directionUnsure) {}
 
     /**
      * What the detail adds to the row.
@@ -431,7 +432,8 @@ public class CrossingQueries {
                 rs.getString("camera_name"),
                 rs.getBoolean("has_face_crop"),
                 rs.getBoolean("has_body_crop"),
-                rs.getBoolean("crops_purged"));
+                rs.getBoolean("crops_purged"),
+                rs.getBoolean("direction_unsure"));
     }
 
     private static Instant instant(ResultSet rs, String column) throws SQLException {

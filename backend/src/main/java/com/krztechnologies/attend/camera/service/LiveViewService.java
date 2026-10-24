@@ -53,8 +53,10 @@ public class LiveViewService {
                             camera.getLatencyMs(),
                             camera.getResolution(),
                             camera.getDirectionMode(),
+                            shape.countingMethod(),
                             shape.zone(),
-                            shape.wire());
+                            shape.wire(),
+                            shape.doorZone());
                 })
                 .toList();
     }

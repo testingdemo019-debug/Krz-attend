@@ -1,8 +1,10 @@
 /**
  * Settings → Cameras: the cameras and their editor (?edit=CAM-nn, ?add=1). One camera at the main entrance records
  * both directions. A new camera is added with its details first (the server gives it a starting zone and tripwire);
- * its password, the connection test, the tripwire and zone (drawn on the camera's latest frame), the calibration test
- * walk and the 7-day health follow in its editor. The password is entered in its own dialog and never shown again.
+ * its password, the connection test, how it counts crossings (D-120: line crossing with the tripwire, or doorway zone
+ * with the door area; each shows only its own settings), the drawing and zone (on the camera's latest frame), the
+ * calibration test walk and the 7-day health follow in its editor. The password is entered in its own dialog and
+ * never shown again.
  */
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
@@ -43,7 +45,7 @@ import { fmtDate } from '@/lib/format';
 import { drawGeometry } from '@/lib/overlays';
 import { useDraft, UnsavedChangesGuard } from '@/lib/useDraft';
 import { plural } from '@/lib/text';
-import { DIRECTION_MODES, term } from '@/lib/vocabulary';
+import { COUNTING_METHODS, DIRECTION_MODES, term, type CountingMethod } from '@/lib/vocabulary';
 import { useQuery } from '@tanstack/react-query';
 import { SettingField } from './SettingsCard';
 import './Cameras.module.css';
@@ -54,10 +56,19 @@ const IPV4 = /^((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.){3}(25[0-5]|2[0-4]\d|1\d\d|[
 const CANVAS_W = 960;
 const CANVAS_H = 540;
 const NEAR = 0.035;
+/** A starting door area over the middle of the picture, to be fitted to the door opening. */
+const DEFAULT_DOOR = [
+  [0.36, 0.08],
+  [0.64, 0.08],
+  [0.64, 0.92],
+  [0.36, 0.92],
+];
 
 interface Geometry {
+  countingMethod: CountingMethod;
   zone: number[][];
   wire: Wire | null;
+  doorZone: number[][];
   confirmFrames: number;
   ignoreUturnSec: number;
 }
@@ -132,7 +143,12 @@ function CameraList() {
                       </div>
                     </td>
                     <td>{c.entryPoint.name}</td>
-                    <td>{term(DIRECTION_MODES, c.directionMode)?.short ?? c.directionMode}</td>
+                    <td>
+                      {term(DIRECTION_MODES, c.directionMode)?.short ?? c.directionMode}
+                      {c.countingMethod === 'DOORWAY_ZONE' && (
+                        <div className="muted xs">{COUNTING_METHODS.DOORWAY_ZONE.label}</div>
+                      )}
+                    </td>
                     <td>
                       <LivePill state={cameraPillState(c)} />
                       {!c.enabled && (
@@ -191,8 +207,10 @@ const inputOf = (c: CameraView): CameraInput => ({
 });
 
 const geometryOf = (c: CameraView): Geometry => ({
+  countingMethod: c.countingMethod,
   zone: c.zone,
   wire: c.wire,
+  doorZone: c.doorZone,
   confirmFrames: c.confirmFrames,
   ignoreUturnSec: c.ignoreUturnSec,
 });
@@ -226,7 +244,14 @@ function CameraEditor({ camera }: { camera: CameraView | null }) {
           enabled: true,
           version: null,
         },
-        geometry: { zone: [], wire: null, confirmFrames: 3, ignoreUturnSec: 5 },
+        geometry: {
+          countingMethod: 'LINE_CROSSING',
+          zone: [],
+          wire: null,
+          doorZone: [],
+          confirmFrames: 3,
+          ignoreUturnSec: 5,
+        },
       };
   const draft = useDraft({
     title: camera?.name ?? 'Camera',
@@ -236,8 +261,10 @@ function CameraEditor({ camera }: { camera: CameraView | null }) {
       if (!IPV4.test(d.input.host)) return 'Enter a valid IP address';
       if (!d.input.entryPoint) return 'Choose the entry point';
       if (camera && !camera.passwordSet) return 'Set the camera password';
-      if (camera && d.input.directionMode !== 'MONITOR' && !d.geometry.wire)
+      const line = d.geometry.countingMethod === 'LINE_CROSSING';
+      if (camera && line && d.input.directionMode !== 'MONITOR' && !d.geometry.wire)
         return 'Add a tripwire — it decides IN and OUT';
+      if (camera && !line && d.geometry.doorZone.length < 3) return 'Draw the door area — it decides IN and OUT';
       return null;
     },
     save: async d => {
@@ -259,6 +286,7 @@ function CameraEditor({ camera }: { camera: CameraView | null }) {
   const setGeometry = (patch: Partial<Geometry>) => {
     draft.set(current => ({ ...current, geometry: { ...current.geometry, ...patch } }));
   };
+  const doorway = d.geometry.countingMethod === 'DOORWAY_ZONE';
 
   useEffect(() => {
     if (leaveTo && !draft.dirty) void navigate(leaveTo);
@@ -366,7 +394,11 @@ function CameraEditor({ camera }: { camera: CameraView | null }) {
           <SettingField
             label="Mounting"
             htmlFor="ce-mount"
-            help="Recommended: inside the lobby, 2.4–2.8 m high, facing people as they come in."
+            help={
+              doorway
+                ? 'For a compact entrance: facing the door from inside, about 2 m high, with the whole door opening in view.'
+                : 'Recommended: inside the lobby, 2.4–2.8 m high, facing people as they come in.'
+            }
           >
             <input
               id="ce-mount"
@@ -378,6 +410,33 @@ function CameraEditor({ camera }: { camera: CameraView | null }) {
             />
           </SettingField>
           {camera && (
+            <SettingField
+              label="How crossings are counted"
+              htmlFor="ce-count"
+              help={COUNTING_METHODS[d.geometry.countingMethod].help}
+            >
+              <select
+                id="ce-count"
+                className="select"
+                value={d.geometry.countingMethod}
+                onChange={e => {
+                  const method = e.target.value as CountingMethod;
+                  setGeometry(
+                    method === 'DOORWAY_ZONE' && d.geometry.doorZone.length < 3
+                      ? { countingMethod: method, doorZone: DEFAULT_DOOR }
+                      : { countingMethod: method },
+                  );
+                }}
+              >
+                {Object.entries(COUNTING_METHODS).map(([value, m]) => (
+                  <option key={value} value={value}>
+                    {m.label}
+                  </option>
+                ))}
+              </select>
+            </SettingField>
+          )}
+          {camera && !doorway && (
             <>
               <SettingField
                 label="Confirm a crossing after"
@@ -860,11 +919,13 @@ function Geometry({
   geometry: Geometry;
   setGeometry: (patch: Partial<Geometry>) => void;
 }) {
-  const [mode, setMode] = useState<'wire' | 'zone'>('wire');
+  // What is edited: the counting method's own drawing (the tripwire, or the door area) or the detection zone.
+  const [mode, setMode] = useState<'method' | 'zone'>('method');
   const [round, setRound] = useState(0);
   const snapshot = useSnapshot(camera.code, round);
   const canvas = useRef<HTMLCanvasElement>(null);
-  const drag = useRef<{ kind: 'a' | 'b' } | { kind: 'z'; i: number } | null>(null);
+  const drag = useRef<{ kind: 'a' | 'b' } | { kind: 'z' | 'd'; i: number } | null>(null);
+  const doorway = g.countingMethod === 'DOORWAY_ZONE';
 
   useEffect(() => {
     const ctx = canvas.current?.getContext('2d');
@@ -884,25 +945,22 @@ function Geometry({
       ctx.textAlign = 'start';
     }
     const r = { x: 0, y: 0, w: CANVAS_W, h: CANVAS_H };
-    drawGeometry(ctx, { zone: g.zone, wire: g.wire }, r, { zone: true, wire: true });
-    ctx.fillStyle = '#facc15';
-    for (const [x = 0, y = 0] of g.zone) {
+    drawGeometry(ctx, g, r, { zone: true, wire: true });
+    const handle = (x: number, y: number, colour: string, size: number) => {
+      ctx.fillStyle = colour;
       ctx.beginPath();
-      ctx.arc(x * CANVAS_W, y * CANVAS_H, 7, 0, Math.PI * 2);
+      ctx.arc(x * CANVAS_W, y * CANVAS_H, size, 0, Math.PI * 2);
       ctx.fill();
+    };
+    for (const [x = 0, y = 0] of g.zone) handle(x, y, '#facc15', 7);
+    const ends = doorway ? g.doorZone : g.wire ? [g.wire.a, g.wire.b] : [];
+    for (const [x = 0, y = 0] of ends) {
+      handle(x, y, '#38bdf8', doorway ? 8 : 10);
+      ctx.strokeStyle = '#0b1220';
+      ctx.lineWidth = 2;
+      ctx.stroke();
     }
-    if (g.wire) {
-      for (const [x = 0, y = 0] of [g.wire.a, g.wire.b]) {
-        ctx.fillStyle = '#38bdf8';
-        ctx.beginPath();
-        ctx.arc(x * CANVAS_W, y * CANVAS_H, 10, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = '#0b1220';
-        ctx.lineWidth = 2;
-        ctx.stroke();
-      }
-    }
-  }, [g, snapshot.data, snapshot.isPending]);
+  }, [g, doorway, snapshot.data, snapshot.isPending]);
 
   const pos = (e: ReactPointerEvent<HTMLCanvasElement>): [number, number] => {
     const r = e.currentTarget.getBoundingClientRect();
@@ -911,16 +969,17 @@ function Geometry({
   };
   const near = (p: readonly number[], px: number, py: number) =>
     Math.hypot(((p[0] ?? 0) - px) * (16 / 9), (p[1] ?? 0) - py) < NEAR;
+  const drawing = doorway ? 'Door area' : 'Tripwire';
 
   return (
     <div className="set-section">
       <div className="row between wrap gap-8">
-        <h3>Tripwire and detection zone</h3>
+        <h3>{drawing} and detection zone</h3>
         <div className="row gap-8 wrap">
           <Segmented
             label="Edit"
             segments={[
-              { value: 'wire', label: 'Tripwire' },
+              { value: 'method', label: drawing },
               { value: 'zone', label: 'Zone' },
             ]}
             value={mode}
@@ -934,6 +993,16 @@ function Geometry({
               }}
             >
               Clear zone
+            </Button>
+          ) : doorway ? (
+            <Button
+              size="sm"
+              icon="refresh"
+              onClick={() => {
+                setGeometry({ doorZone: DEFAULT_DOOR });
+              }}
+            >
+              Reset door area
             </Button>
           ) : (
             <>
@@ -973,7 +1042,9 @@ function Geometry({
       <p className="help mb-8">
         {mode === 'zone'
           ? 'Click to add points; drag a point to move it. People are detected only inside the zone.'
-          : 'Drag the ends of the line across the doorway. The arrow points inside: crossing with the arrow is IN, against it is OUT.'}
+          : doorway
+            ? 'Drag the corners so the area fits the door opening tightly; click to add a corner. Someone who appears here and walks into the room is IN; someone who walks from the room and disappears here is OUT — whichever side of the room they use.'
+            : 'Drag the ends of the line across the doorway. The arrow points inside: crossing with the arrow is IN, against it is OUT.'}
       </p>
       <div className="editor-wrap">
         <IconButton
@@ -991,13 +1062,15 @@ function Geometry({
           ref={canvas}
           width={CANVAS_W}
           height={CANVAS_H}
-          aria-label="Camera snapshot with tripwire and zone"
+          aria-label={`Camera snapshot with ${drawing.toLowerCase()} and zone`}
           onPointerDown={e => {
             const [px, py] = pos(e);
-            if (mode === 'zone') {
-              const i = g.zone.findIndex(p => near(p, px, py));
-              if (i >= 0) drag.current = { kind: 'z', i };
-              else setGeometry({ zone: [...g.zone, [px, py]] });
+            if (mode === 'zone' || doorway) {
+              const points = mode === 'zone' ? g.zone : g.doorZone;
+              const kind = mode === 'zone' ? 'z' : 'd';
+              const i = points.findIndex(p => near(p, px, py));
+              if (i >= 0) drag.current = { kind, i };
+              else setGeometry(kind === 'z' ? { zone: [...points, [px, py]] } : { doorZone: [...points, [px, py]] });
             } else if (g.wire) {
               if (near(g.wire.a, px, py)) drag.current = { kind: 'a' };
               else if (near(g.wire.b, px, py)) drag.current = { kind: 'b' };
@@ -1009,6 +1082,8 @@ function Geometry({
             if (!current) return;
             const p = pos(e);
             if (current.kind === 'z') setGeometry({ zone: g.zone.map((z, j) => (j === current.i ? p : z)) });
+            else if (current.kind === 'd')
+              setGeometry({ doorZone: g.doorZone.map((z, j) => (j === current.i ? p : z)) });
             else if (g.wire) setGeometry({ wire: { ...g.wire, [current.kind]: p } });
           }}
           onPointerUp={() => {
@@ -1017,16 +1092,21 @@ function Geometry({
         />
       </div>
       <p className="muted xs mt-4">
-        {g.zone.length} zone points · tripwire{' '}
-        {g.wire
-          ? `inside is ${g.wire.inSide > 0 ? 'towards the camera (bottom of the image)' : 'away from the camera (top of the image)'}`
-          : 'not set'}
+        {g.zone.length} zone points ·{' '}
+        {doorway
+          ? `door area ${plural(g.doorZone.length, 'corner')}`
+          : `tripwire ${
+              g.wire
+                ? `inside is ${g.wire.inSide > 0 ? 'towards the camera (bottom of the image)' : 'away from the camera (top of the image)'}`
+                : 'not set'
+            }`}
       </p>
     </div>
   );
 }
 
 function CalibrationSection({ camera }: { camera: CameraView }) {
+  const doorway = camera.countingMethod === 'DOORWAY_ZONE';
   const start = useStartCalibration(camera.code);
   const [runId, setRunId] = useState<number | null>(null);
   const run = useCalibration(camera.code, runId).data;
@@ -1052,22 +1132,36 @@ function CalibrationSection({ camera }: { camera: CameraView }) {
         </Button>
       </div>
       <p className="help">
-        Walk in and out once. The camera should record IN when you face it and OUT when you walk away.
+        {doorway
+          ? 'Walk in through the door, then out again through it. Coming in should be IN, going out OUT.'
+          : 'Walk in and out once. The camera should record IN when you face it and OUT when you walk away.'}
       </p>
       <div className="mt-8 small">
         {running ? (
           <span className="row gap-4">
             <Spinner dark />
-            Walk towards the camera now, then away from it…
+            {doorway
+              ? 'Come in through the door now, then go out again…'
+              : 'Walk towards the camera now, then away from it…'}
           </span>
         ) : run?.verdict === 'PASSED' ? (
           <Callout tone="ok" icon="checkCircle">
-            <b>Test walk passed.</b> Towards the camera → <b>IN</b>. Away → <b>OUT</b>. No punches were created.
+            <b>Test walk passed.</b> {doorway ? 'Coming in' : 'Towards the camera'} → <b>IN</b>.{' '}
+            {doorway ? 'Going out' : 'Away'} → <b>OUT</b>. No punches were created.
           </Callout>
         ) : run?.verdict === 'REVERSED' ? (
           <Callout tone="danger" icon="alertCircle">
-            <b>Directions are reversed.</b> Walking towards the camera was read as OUT. Use “Flip inside direction”,
-            save, and run the test walk again.
+            {doorway ? (
+              <>
+                <b>Coming in was read as OUT.</b> Check that the door area covers only the door opening, save, and run
+                the test walk again, starting outside the door.
+              </>
+            ) : (
+              <>
+                <b>Directions are reversed.</b> Walking towards the camera was read as OUT. Use “Flip inside direction”,
+                save, and run the test walk again.
+              </>
+            )}
           </Callout>
         ) : run?.verdict === 'NO_CROSSINGS' ? (
           <Callout tone="warn" icon="alert">

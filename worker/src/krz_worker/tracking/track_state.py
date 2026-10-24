@@ -1,6 +1,6 @@
-"""What the worker knows about one tracked person while they are in view: where they are relative to the tripwire,
-the face votes, the liveness checks, the best face and body crops, the body embeddings and how they look in the
-overlay."""
+"""What the worker knows about one tracked person while they are in view: where they are relative to the tripwire
+(or, on a doorway-zone camera, their walk), the face votes, the liveness checks, the best face and body crops, the body
+embeddings and how they look in the overlay."""
 
 from __future__ import annotations
 
@@ -11,6 +11,7 @@ from dataclasses import dataclass, field
 from krz_worker.models.base import Face, Image, Liveness, Vectors
 from krz_worker.recognition.decision import Evidence, Thresholds, Vote, decide
 from krz_worker.recognition.quality import Quality
+from krz_worker.tracking.doorway import Walk
 from krz_worker.tracking.tripwire import Direction, LineState
 
 #: Body embeddings kept per track (the best by box height).
@@ -43,6 +44,10 @@ class TrackState:
     last_seen: dt.datetime
     box: tuple[float, float, float, float] = (0.0, 0.0, 0.0, 0.0)
     line: LineState = field(default_factory=LineState)
+    #: On a doorway-zone camera: the walk since the person appeared, and whether it was judged (a track seen again
+    #: after that starts a new walk).
+    walk: Walk = field(default_factory=Walk)
+    walk_judged: bool = False
     votes: deque[Vote] = field(default_factory=lambda: deque(maxlen=VOTES_KEPT))
     liveness: deque[Liveness] = field(default_factory=lambda: deque(maxlen=3))
     best_face: FaceSample | None = None

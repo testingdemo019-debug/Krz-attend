@@ -25,6 +25,7 @@ public final class CrossingViews {
      * @param confidence {@code HIGH}/{@code MEDIUM}/{@code LOW} of the face (or Re-ID) score, or null
      * @param score the raw score; null without settings.recognition
      * @param faceCrop a face crop was stored (served by the media endpoint, blurred by default)
+     * @param directionUnsure a doorway-zone walk whose direction no check supported (D-120): check it, flip if wrong
      */
     public record EventRow(
             String code,
@@ -44,7 +45,8 @@ public final class CrossingViews {
             @Nullable String effectReason,
             boolean faceCrop,
             boolean bodyCrop,
-            boolean cropsPurged) {}
+            boolean cropsPurged,
+            boolean directionUnsure) {}
 
     /** Identified crossings (no U-turns, not voided) of one IST day and hour in one direction. */
     public record HourCount(LocalDate day, int hour, String direction, int count) {}

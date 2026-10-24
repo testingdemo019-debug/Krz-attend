@@ -3,10 +3,12 @@
 Per processed frame: people (YOLOX) whose anchor is inside the zone -> ByteTrack IDs -> per track the tripwire,
 face checks (YuNet on the head region at full resolution, quality gate, liveness, SFace, gallery vote) and body
 embeddings (OSNet) -> a confirmed crossing gets its R14 decision, crops and message, then waits out the U-turn window
-before it is sent. Direction modes are not applied here: every crossing is sent and the backend applies the camera's
-mode, so the rule lives in one place. During a calibration run crossings go to the run instead of the stream. During
-an enrolment capture (``pipeline.enrol_capture``) the person in view gives face samples to it, and their crossings are
-marked so the backend records them without counting them.
+before it is sent. A camera counted by doorway zone (D-120, ``tracking.doorway``) has no tripwire, confirmation or
+U-turn window: each track's walk is judged shortly after the person has gone, and a walk that was a crossing is sent
+at once (door -> door is no crossing, so there is no U-turn to wait for). Direction modes are not applied here: every
+crossing is sent and the backend applies the camera's mode, so the rule lives in one place. During a calibration run
+crossings go to the run instead of the stream. During an enrolment capture (``pipeline.enrol_capture``) the person in
+view gives face samples to it, and their crossings are marked so the backend records them without counting them.
 
 ``process`` does the work of one frame and returns what it emitted, so tests and replay_video.py drive it directly;
 ``run`` analyses at most WORKER_MAX_FPS pictures a second of a live source, counted on their arrival times
@@ -42,7 +44,7 @@ from krz_worker.recognition.decision import Evidence, Thresholds, Vote, decide, 
 from krz_worker.stream import onvif
 from krz_worker.stream.frame_source import Frame, FrameSource
 from krz_worker.timeutil import iso_ms, ist_day, now_utc
-from krz_worker.tracking import zone
+from krz_worker.tracking import doorway, zone
 from krz_worker.tracking.track_state import BodySample, FaceSample, TrackState
 from krz_worker.tracking.tracker import PersonTracker
 from krz_worker.tracking.tripwire import Crossing, Released, UturnHold
@@ -109,8 +111,8 @@ class CameraPipeline:
     # --- configuration ------------------------------------------------------------------------------------------
 
     def apply(self, camera: CameraConfig) -> None:
-        """Geometry, liveness and the U-turn window apply from the next frame (a connection change restarts the
-        pipeline instead)."""
+        """Geometry, the counting method, liveness and the U-turn window apply from the next frame (a connection
+        change restarts the pipeline instead)."""
         if camera.ignore_uturn_sec != self.camera.ignore_uturn_sec:
             self._hold.window = dt.timedelta(seconds=camera.ignore_uturn_sec)
         self.camera = camera
@@ -138,11 +140,17 @@ class CameraPipeline:
             state.last_seen, state.box = frame.ts, person.box
             if alone:
                 state.enrolment_capture = True
+            if self.camera.doorway:
+                if state.walk_judged:
+                    state.walk, state.walk_judged = doorway.Walk(), False
+                state.walk.add(frame.ts, person.box, person.score)
             self._faces(state, image, thresholds, capture if alone else None, frame.ts)
             self._body(state, image)
-            crossing = self._tripwire(state, width, height, frame.ts)
+            crossing = None if self.camera.doorway else self._tripwire(state, width, height, frame.ts)
             if crossing is not None:
                 emitted += self._confirm(state, person, crossing, frame, thresholds)
+        if self.camera.doorway:
+            emitted += self._walks_gone(frame.ts, width, height, thresholds)
         emitted += [self._release(r) for r in self._hold.due(frame.ts)]
         self._tracks = {k: s for k, s in self._tracks.items() if frame.ts - s.last_seen <= TRACK_TIMEOUT}
         self._overlays(width, height, thresholds)
@@ -153,8 +161,15 @@ class CameraPipeline:
         return [e for e in emitted if e]
 
     def flush(self) -> list[dict[str, str]]:
-        """Shutdown: every held crossing is sent as it stands."""
-        return [e for e in (self._release(r) for r in self._hold.flush()) if e]
+        """Shutdown: every held crossing is sent as it stands, and every walk not judged yet is judged."""
+        thresholds = self._ctx.live.thresholds
+        walks: list[dict[str, str]] = []
+        if self.camera.doorway and thresholds is not None and self.latest is not None:
+            height, width = self.latest.image.shape[:2]
+            for state in list(self._tracks.values()):
+                if not state.walk_judged:
+                    walks += self._judge_walk(state, width, height, thresholds)
+        return [e for e in [*walks, *(self._release(r) for r in self._hold.flush())] if e]
 
     def _in_zone(self, person: Person, width: int, height: int) -> bool:
         return zone.contains(self.camera.zone, zone.anchor(person.box, width, height))
@@ -187,6 +202,8 @@ class CameraPipeline:
         if head.size == 0:
             return
         found = self._models.face_detector.detect(head)
+        if self.camera.doorway and y2 - y1 >= MIN_BODY_HEIGHT:
+            state.walk.face_checked(bool(found))
         if not found:
             return
         face = max(found, key=lambda f: f.box[2] * f.box[3]).shifted(max(0.0, x1), max(0.0, y1))
@@ -242,7 +259,9 @@ class CameraPipeline:
         height, width = image.shape[:2]
         x1, y1, x2, y2 = state.box
         box_height = y2 - y1
-        whole = x1 > EDGE and y1 > EDGE and x2 < width - EDGE and y2 < height - EDGE
+        # On a doorway-zone camera people are close and usually cut off at the top or bottom: the upper body is the
+        # sample there, and every sample of that camera is alike.
+        whole = x1 > EDGE and x2 < width - EDGE and (self.camera.doorway or (y1 > EDGE and y2 < height - EDGE))
         if box_height < MIN_BODY_HEIGHT or not whole:
             return
         state.last_body_check = self._frame_index
@@ -268,7 +287,42 @@ class CameraPipeline:
             pending = _Pending(lambda: self._message(state, crossing, thresholds), None)
         return [self._release(r) for r in self._hold.confirm(state.track_id, crossing.direction, pending, frame.ts)]
 
-    def _message(self, state: TrackState, crossing: Crossing, thresholds: Thresholds) -> dict[str, str]:
+    def _walks_gone(self, now: dt.datetime, width: int, height: int, thresholds: Thresholds) -> list[dict[str, str]]:
+        """Judges the walks of the people gone long enough (doorway zone)."""
+        emitted: list[dict[str, str]] = []
+        area = self._area
+        for state in self._tracks.values():
+            if state.walk_judged or state.last_seen >= now:
+                continue
+            if now - state.last_seen >= doorway.wait_after(state.walk, area, width, height):
+                emitted += self._judge_walk(state, width, height, thresholds)
+        return emitted
+
+    def _judge_walk(self, state: TrackState, width: int, height: int, thresholds: Thresholds) -> list[dict[str, str]]:
+        state.walk_judged = True
+        confidence = state.walk.confidence
+        walk = doorway.judge(state.walk, self._area, width, height, self.camera.faces_visible_when)
+        if walk is None:
+            return []
+        state.direction = walk.direction
+        crossing = Crossing(walk.direction, walk.at, walk.frames)
+        run = self._ctx.calibrations.active(self.camera.code, now_utc())
+        if run is not None:
+            self._ctx.calibrations.record(
+                run, CalibrationCrossing(walk.at, walk.direction, confidence, walk.frames, False)
+            )
+            return []
+        unsure = walk.unsure
+        pending = _Pending(lambda: self._message(state, crossing, thresholds, unsure), None)
+        return [self._release(Released(pending, u_turn=False))]
+
+    @property
+    def _area(self) -> doorway.Area:
+        return doorway.Area(self.camera.door_zone, self.camera.zone)
+
+    def _message(
+        self, state: TrackState, crossing: Crossing, thresholds: Thresholds, direction_unsure: bool = False
+    ) -> dict[str, str]:
         ctx = self._ctx
         evidence = state.evidence(crossing.direction, self.camera.liveness_enabled)
         bodies = (
@@ -332,6 +386,7 @@ class CameraPipeline:
             worker_id=ctx.settings.worker_id,
             trace_id=trace_id,
             enrolment_capture=state.enrolment_capture,
+            direction_unsure=direction_unsure,
         )
 
     def _release(self, released: Released[_Pending]) -> dict[str, str]:

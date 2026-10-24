@@ -21,8 +21,8 @@ import java.util.UUID;
 import org.hibernate.annotations.ColumnTransformer;
 
 /**
- * A camera at an entry point: details, connection (the password AES-GCM encrypted, never returned), geometry (zone and
- * tripwire as jsonb) and the per-camera liveness flag. {@code config_version} goes up on every change the worker must
+ * A camera at an entry point: details, connection (the password AES-GCM encrypted, never returned), geometry (the
+ * counting method, and the zone, tripwire and door area as jsonb) and the per-camera liveness flag. {@code config_version} goes up on every change the worker must
  * apply. Status and the health metrics belong to {@code CameraHealthService}, which writes them with SQL so a
  * heartbeat never touches {@code version}; here they are written only once, when the camera is added.
  */
@@ -99,6 +99,14 @@ public class Camera {
     @ColumnTransformer(write = "CAST(? AS jsonb)")
     private String wire;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "counting_method", nullable = false)
+    private CountingMethod countingMethod;
+
+    @Column(name = "door_zone", columnDefinition = "jsonb")
+    @ColumnTransformer(write = "CAST(? AS jsonb)")
+    private String doorZone;
+
     @Column(name = "confirm_frames", nullable = false)
     private short confirmFrames;
 
@@ -161,6 +169,7 @@ public class Camera {
         apply(input, entryPointId);
         this.zone = zoneJson;
         this.wire = wireJson;
+        this.countingMethod = CameraGeometry.DEFAULT.countingMethod();
         this.confirmFrames = (short) CameraGeometry.DEFAULT.confirmFrames();
         this.ignoreUturnSec = (short) CameraGeometry.DEFAULT.ignoreUturnSec();
         this.livenessEnabled = true;
@@ -202,9 +211,17 @@ public class Camera {
         this.passwordUpdatedAt = at;
     }
 
-    public void setGeometry(String zoneJson, String wireJson, int confirm, int ignoreUturn) {
+    public void setGeometry(
+            CountingMethod method,
+            String zoneJson,
+            String wireJson,
+            String doorZoneJson,
+            int confirm,
+            int ignoreUturn) {
+        this.countingMethod = method;
         this.zone = zoneJson;
         this.wire = wireJson;
+        this.doorZone = doorZoneJson;
         this.confirmFrames = (short) confirm;
         this.ignoreUturnSec = (short) ignoreUturn;
     }
@@ -327,6 +344,14 @@ public class Camera {
 
     public String getWire() {
         return wire;
+    }
+
+    public CountingMethod getCountingMethod() {
+        return countingMethod;
+    }
+
+    public String getDoorZone() {
+        return doorZone;
     }
 
     public int getConfirmFrames() {

@@ -2217,7 +2217,7 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** Save the detection zone, tripwire, confirm frames and U-turn window */
+        /** Save the counting method, detection zone, tripwire or door area, confirm frames and U-turn window */
         put: operations["setGeometry"];
         post?: never;
         delete?: never;
@@ -3445,6 +3445,9 @@ export interface components {
         "CameraController.GeometryRequest": {
             /** Format: int32 */
             confirmFrames: number;
+            /** @enum {string} */
+            countingMethod: "LINE_CROSSING" | "DOORWAY_ZONE";
+            doorZone: number[][] | null;
             /** Format: int32 */
             ignoreUturnSec: number;
             /** Format: int32 */
@@ -3501,7 +3504,10 @@ export interface components {
             /** Format: int32 */
             confirmFrames: number;
             /** @enum {string} */
+            countingMethod: "LINE_CROSSING" | "DOORWAY_ZONE";
+            /** @enum {string} */
             directionMode: "BOTH" | "IN" | "OUT" | "MONITOR";
+            doorZone: number[][];
             enabled: boolean;
             entryPoint: components["schemas"]["CameraViews.EntryPointRef"];
             /** @enum {string} */
@@ -3583,7 +3589,10 @@ export interface components {
         "CameraViews.LiveTile": {
             code: string;
             /** @enum {string} */
+            countingMethod: "LINE_CROSSING" | "DOORWAY_ZONE";
+            /** @enum {string} */
             directionMode: "BOTH" | "IN" | "OUT" | "MONITOR";
+            doorZone: number[][];
             entryPoint: string | null;
             fps: number | null;
             /** Format: int32 */
@@ -3723,6 +3732,7 @@ export interface components {
             cropsPurged: boolean;
             decision: string;
             direction: string;
+            directionUnsure: boolean;
             effect: string | null;
             effectReason: string | null;
             faceCrop: boolean;

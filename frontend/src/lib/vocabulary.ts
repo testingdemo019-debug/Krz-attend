@@ -90,6 +90,19 @@ export const DIRECTION_MODES = {
 } as const satisfies Record<string, { label: string; short: string }>;
 export type DirectionMode = keyof typeof DIRECTION_MODES;
 
+/** How a camera counts crossings (D-120): each method has its own drawing on the picture and its own settings. */
+export const COUNTING_METHODS = {
+  LINE_CROSSING: {
+    label: 'Line crossing',
+    help: 'People are counted when their feet cross a line on the floor. Best when the floor in front of the door is in view.',
+  },
+  DOORWAY_ZONE: {
+    label: 'Doorway zone',
+    help: 'For compact entrances: people are counted by where they appear and disappear — through the door or into the room. No floor line needed.',
+  },
+} as const satisfies Record<string, { label: string; help: string }>;
+export type CountingMethod = keyof typeof COUNTING_METHODS;
+
 /** Why someone is not tracked by camera (TRACKING_REASONS). */
 export const TRACKING_REASONS = {
   NO_FACE: 'No face profile',

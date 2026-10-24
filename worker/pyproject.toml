@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "krz-worker"
-version = "0.5.0"
+version = "0.6.0"
 description = "KRZ Attend vision worker: camera video in, crossings out (Redis stream)."
 requires-python = ">=3.11,<3.12"
 license = "LicenseRef-Proprietary"

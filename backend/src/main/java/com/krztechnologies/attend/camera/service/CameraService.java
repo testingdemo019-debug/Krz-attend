@@ -2,6 +2,7 @@ package com.krztechnologies.attend.camera.service;
 
 import com.krztechnologies.attend.camera.domain.Camera;
 import com.krztechnologies.attend.camera.domain.CameraGeometry;
+import com.krztechnologies.attend.camera.domain.CountingMethod;
 import com.krztechnologies.attend.camera.repository.CameraRepository;
 import com.krztechnologies.attend.camera.repository.EntryPointQueries;
 import com.krztechnologies.attend.camera.repository.EntryPointQueries.EntryPointRow;
@@ -34,7 +35,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Settings → Cameras: add and edit cameras (code CAM-nn, at an entry point), set the password (AES-GCM encrypted,
- * never returned), edit the zone and tripwire, flip the inside direction and switch liveness. Every change the worker
+ * never returned), choose the counting method (D-120) and edit its drawing (the tripwire or the door area) and the
+ * zone, flip the inside direction and switch liveness. Every change the worker
  * must apply bumps {@code config_version} and publishes {@code krz:config camera} after the commit; connection changes
  * also re-register the go2rtc stream. Every change is audited (category Cameras; liveness under Recognition).
  */
@@ -139,7 +141,7 @@ public class CameraService {
         checkVersion(camera, input.version());
         EntryPointRow entryPoint = entryPoint(input.entryPoint(), camera.getEntryPointId());
         CameraGeometry shape = geometry.of(camera);
-        if (input.directionMode() != CameraMode.MONITOR && shape.wire() == null) {
+        if (needsTripwire(shape.countingMethod(), input.directionMode()) && shape.wire() == null) {
             throw tripwireRequired();
         }
         Map<String, Object> before = camera.settings();
@@ -199,7 +201,8 @@ public class CameraService {
         return view(camera);
     }
 
-    /** Saves the detection zone, the tripwire, the confirm frames and the U-turn window. */
+    /** Saves the counting method, the detection zone, the tripwire or door area, the confirm frames and the U-turn
+     * window. */
     @Transactional
     public CameraViews.CameraView setGeometry(String code, CameraGeometry shape, int version) {
         Camera camera = find(code);
@@ -214,13 +217,14 @@ public class CameraService {
         Camera camera = find(code);
         checkVersion(camera, version);
         CameraGeometry shape = geometry.of(camera);
+        if (shape.countingMethod() != CountingMethod.LINE_CROSSING) {
+            throw new Errors.BusinessRule(
+                    "NOT_LINE_CROSSING", "This camera counts by doorway zone; it has no tripwire to flip.");
+        }
         if (shape.wire() == null) {
             throw tripwireRequired();
         }
-        return applyGeometry(
-                camera,
-                new CameraGeometry(
-                        shape.zone(), shape.wire().flipped(), shape.confirmFrames(), shape.ignoreUturnSec()));
+        return applyGeometry(camera, shape.flipped());
     }
 
     /** The per-camera liveness check (Settings → Recognition → Liveness), audited under Recognition. */
@@ -255,7 +259,12 @@ public class CameraService {
             return view(camera);
         }
         camera.setGeometry(
-                geometry.zoneColumn(shape), geometry.wireColumn(shape), shape.confirmFrames(), shape.ignoreUturnSec());
+                shape.countingMethod(),
+                geometry.zoneColumn(shape),
+                geometry.wireColumn(shape),
+                geometry.doorZoneColumn(shape),
+                shape.confirmFrames(),
+                shape.ignoreUturnSec());
         camera.bumpConfigVersion();
         cameras.saveAndFlush(camera);
         audit.record(
@@ -277,6 +286,12 @@ public class CameraService {
         if (!shape.zone().stream().allMatch(CameraService::isNormalisedPoint)) {
             problems.add(new ErrorResponse.FieldError("zone", "Each point is [x, y] with values from 0 to 1."));
         }
+        if (!shape.doorZone().isEmpty() && shape.doorZone().size() < CameraGeometry.MIN_ZONE_POINTS) {
+            problems.add(new ErrorResponse.FieldError("doorZone", "A door area needs at least 3 points."));
+        }
+        if (!shape.doorZone().stream().allMatch(CameraService::isNormalisedPoint)) {
+            problems.add(new ErrorResponse.FieldError("doorZone", "Each point is [x, y] with values from 0 to 1."));
+        }
         if (shape.wire() != null) {
             if (Math.abs(shape.wire().inSide()) != 1) {
                 problems.add(new ErrorResponse.FieldError("wire.inSide", "Must be 1 or -1."));
@@ -288,9 +303,18 @@ public class CameraService {
         if (!problems.isEmpty()) {
             throw new Errors.BusinessRule("VALIDATION", "Some fields are not valid.", problems);
         }
-        if (shape.wire() == null && mode != CameraMode.MONITOR) {
+        if (needsTripwire(shape.countingMethod(), mode) && shape.wire() == null) {
             throw tripwireRequired();
         }
+        if (shape.countingMethod() == CountingMethod.DOORWAY_ZONE
+                && shape.doorZone().isEmpty()) {
+            throw new Errors.BusinessRule("DOOR_AREA_REQUIRED", "Draw the door area — it decides IN and OUT");
+        }
+    }
+
+    /** A line-crossing camera needs its tripwire unless it only monitors; a doorway-zone camera needs none. */
+    private static boolean needsTripwire(CountingMethod method, CameraMode mode) {
+        return method == CountingMethod.LINE_CROSSING && mode != CameraMode.MONITOR;
     }
 
     private static boolean isNormalisedPoint(List<Double> point) {
@@ -299,8 +323,14 @@ public class CameraService {
 
     private static List<String> geometryChanges(CameraGeometry before, CameraGeometry after) {
         List<String> changed = new ArrayList<>();
+        if (before.countingMethod() != after.countingMethod()) {
+            changed.add("countingMethod");
+        }
         if (!before.zone().equals(after.zone())) {
             changed.add("zone");
+        }
+        if (!before.doorZone().equals(after.doorZone())) {
+            changed.add("doorZone");
         }
         if (!Objects.equals(before.wire(), after.wire())) {
             changed.add("wire");
@@ -396,8 +426,10 @@ public class CameraService {
                 camera.subStream(null).masked(),
                 camera.isEnabled(),
                 camera.isLivenessEnabled(),
+                shape.countingMethod(),
                 shape.zone(),
                 shape.wire(),
+                shape.doorZone(),
                 shape.confirmFrames(),
                 shape.ignoreUturnSec(),
                 camera.getStatus(),

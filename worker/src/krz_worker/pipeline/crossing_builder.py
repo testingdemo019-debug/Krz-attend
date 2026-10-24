@@ -42,6 +42,7 @@ def build(
     worker_id: str,
     trace_id: str,
     enrolment_capture: bool = False,
+    direction_unsure: bool = False,
 ) -> dict[str, str]:
     return {
         "v": VERSION,
@@ -75,6 +76,7 @@ def build(
         "worker_id": worker_id,
         "trace_id": trace_id,
         "enrolment_capture": "true" if enrolment_capture else "false",
+        "direction_unsure": "true" if direction_unsure else "false",
     }
 
 
