@@ -25,7 +25,7 @@ import { toast } from '@/components/feedback/toast';
 import { Icon } from '@/components/icons/Icon';
 import { Button, ButtonLink } from '@/components/ui/Button';
 import { KeyValueList } from '@/components/ui/KeyValueList';
-import { SkeletonRows } from '@/components/ui/Skeleton';
+import { DrawerSkeleton } from '@/components/ui/Skeleton';
 import { copyText } from '@/lib/clipboard';
 import { trackName } from '@/lib/text';
 import { fmtDate, fmtDateTime, fmtDay, fmtTime, zoneLabel } from '@/lib/format';
@@ -349,7 +349,7 @@ export function EventDrawer({
           <Icon name="alertCircle" size="sm" /> {crossing.error.message}
         </p>
       ) : (
-        <SkeletonRows rows={6} columns={2} />
+        <DrawerSkeleton />
       )}
     </Drawer>
   );

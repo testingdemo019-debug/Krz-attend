@@ -15,9 +15,11 @@ import { Switch } from '@/components/form/Switch';
 import { Card } from '@/components/layout/Card';
 import { PageHead } from '@/components/layout/PageHead';
 import { Button } from '@/components/ui/Button';
+import { Callout } from '@/components/ui/Callout';
 import { Kbd } from '@/components/ui/Kbd';
-import { SkeletonRows } from '@/components/ui/Skeleton';
+import { ReviewCardsSkeleton } from '@/components/ui/Skeleton';
 import { Tabs, type TabItem } from '@/components/ui/Tabs';
+import { todayDay } from '@/lib/format';
 import { isTyping, overlayOpen } from '@/lib/keyboard';
 import { readPreference, writePreference } from '@/lib/storage';
 import { useNow } from '@/lib/useNow';
@@ -108,7 +110,20 @@ export function ReviewQueuePage() {
   );
 }
 
-function OpenFilters({ type }: { type: ReviewType }) {
+/**
+ * The open tabs' filters. "Waiting over …" names NR-03's threshold and how many listed items it keeps (D-121: with
+ * every open item older than the threshold, switching it on changed nothing visible). "Today" is a quick date range.
+ */
+function OpenFilters({
+  type,
+  waitMinutes,
+  waitingCount,
+}: {
+  type: ReviewType;
+  waitMinutes: number;
+  /** Listed items waiting over the threshold ("200+" when the list holds the first 200), null while loading. */
+  waitingCount: string | null;
+}) {
   const [params, setParams] = useSearchParams();
   const set = (key: (typeof OPEN_FILTERS)[number], value: string): void => {
     setParams(
@@ -123,6 +138,7 @@ function OpenFilters({ type }: { type: ReviewType }) {
     );
   };
   const any = OPEN_FILTERS.some(k => params.has(k));
+  const today = params.get('from') === todayDay() && params.get('to') === todayDay();
   return (
     <div className="row wrap gap-8 mb-12">
       <select
@@ -175,9 +191,35 @@ function OpenFilters({ type }: { type: ReviewType }) {
           }}
         />
       </span>
+      <Button
+        size="sm"
+        aria-pressed={today}
+        variant={today ? 'primary' : 'default'}
+        tooltip="Only items first seen today"
+        onClick={() => {
+          setParams(
+            prev => {
+              const out = new URLSearchParams(prev);
+              out.delete('item');
+              if (today) {
+                out.delete('from');
+                out.delete('to');
+              } else {
+                out.set('from', todayDay());
+                out.set('to', todayDay());
+              }
+              return out;
+            },
+            { replace: true },
+          );
+        }}
+      >
+        Today
+      </Button>
       <Switch
         id="review-old"
-        label="Waiting over 30 min"
+        label={`Waiting over ${String(waitMinutes)} min${waitingCount === null ? '' : ` (${waitingCount})`}`}
+        tooltip={`Open items not decided within ${String(waitMinutes)} minutes (notification rule NR-03)`}
         checked={params.get('waiting') === '1'}
         onChange={event => {
           set('waiting', event.target.checked ? '1' : '');
@@ -209,9 +251,15 @@ function OpenItems({ type, openCount, focusCode }: { type: ReviewType; openCount
     waiting: params.get('waiting') === '1',
   });
   const items = useMemo(() => list.data?.items ?? [], [list.data]);
-  const unknownHours = useMeta(true).data?.unknownFaceHours ?? 24;
+  const meta = useMeta(true).data;
+  const unknownHours = meta?.unknownFaceHours ?? 24;
+  const waitMinutes = meta?.reviewWaitMinutes ?? 30;
+  const waitingOnly = params.get('waiting') === '1';
+  const listedAll = list.data !== undefined && list.data.total <= items.length;
+  const waiting = items.filter(i => i.waiting).length;
+  const waitingCount = list.data === undefined ? null : `${String(waiting)}${listedAll ? '' : '+'}`;
   const now = useNow(60_000);
-  const { actions, leaving, dialogs } = useReviewDecisions();
+  const { actions, active, resolved, leaving, dialogs } = useReviewDecisions();
   const [cursor, setCursor] = useState<{ code: string | null; index: number }>({ code: focusCode, index: 0 });
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
   const [choices, setChoices] = useState<Readonly<Record<string, CardChoice>>>({});
@@ -260,14 +308,14 @@ function OpenItems({ type, openCount, focusCode }: { type: ReviewType; openCount
   if (list.isPending) {
     return (
       <Card>
-        <SkeletonRows rows={4} columns={3} />
+        <ReviewCardsSkeleton />
       </Card>
     );
   }
   if (list.isError) {
     return (
       <>
-        <OpenFilters type={type} />
+        <OpenFilters type={type} waitMinutes={waitMinutes} waitingCount={null} />
         <Card>
           <ErrorState
             what="the Review Queue"
@@ -291,7 +339,12 @@ function OpenItems({ type, openCount, focusCode }: { type: ReviewType; openCount
 
   return (
     <>
-      <OpenFilters type={type} />
+      <OpenFilters type={type} waitMinutes={waitMinutes} waitingCount={waitingCount} />
+      {waitingOnly && items.length > 0 && items.length === openCount && (
+        <Callout tone="neutral" icon="info" className="mb-12 small">
+          All {items.length} open items have waited over {waitMinutes} minutes, so this switch hides none of them.
+        </Callout>
+      )}
       {items.length === 0 ? (
         <Card>
           <EmptyState
@@ -359,6 +412,8 @@ function OpenItems({ type, openCount, focusCode }: { type: ReviewType; openCount
                 key={item.code}
                 item={item}
                 current={item.code === current?.code}
+                active={active.has(item.code)}
+                resolved={resolved.get(item.code) ?? null}
                 leaving={leaving.has(item.code)}
                 selected={selected.has(item.code)}
                 onSelect={() => {

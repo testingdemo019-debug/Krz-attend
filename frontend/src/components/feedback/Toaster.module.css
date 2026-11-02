@@ -9,6 +9,8 @@ html[data-theme="dark"] .toast.success .t-ic{color:#15803d} html[data-theme="dar
 html[data-theme="dark"] .toast .t-logged{background:rgba(0,0,0,.1)}
 .toast button{background:none;border:0;color:inherit;font-weight:700;cursor:pointer;padding:4px 6px;border-radius:4px;text-decoration:underline}
 .toast .t-close{opacity:.7;text-decoration:none}
+/* A link in the message (e.g. a review decision's "View", D-121): the toast's own colour, underlined. */
+.toast a{color:inherit;font-weight:700;text-decoration:underline}
 .toast .t-act{color:#fff}
 /* F6.10: bottom right on desktop and bottom centre on phones, above the unsaved-changes bar (--savebar-h is set while
    one is shown), so a toast never covers the topbar or a primary action. */

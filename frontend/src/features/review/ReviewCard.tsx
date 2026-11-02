@@ -77,6 +77,8 @@ function Candidates({ item }: { item: ReviewItem }) {
 export function ReviewCard({
   item,
   current,
+  active,
+  resolved,
   leaving,
   selected,
   onSelect,
@@ -89,6 +91,10 @@ export function ReviewCard({
 }: {
   item: ReviewItem;
   current: boolean;
+  /** Being decided: its dialog is open or its decision on the way (D-121). */
+  active: boolean;
+  /** What was decided, shown on the card before it leaves; null while open. */
+  resolved: string | null;
   leaving: boolean;
   selected: boolean;
   onSelect: () => void;
@@ -319,10 +325,25 @@ export function ReviewCard({
   const shown = item.type === 'UNKNOWN' ? best : first;
   return (
     <article
-      className={cx('rv-card', current && 'current', leaving && 'leaving')}
+      className={cx('rv-card', current && 'current', active && 'active', resolved && 'resolved', leaving && 'leaving')}
       data-review={item.code}
       aria-label={title}
     >
+      {active && !resolved && (
+        <span className="rv-flag">
+          <Icon name="crosshair" size="sm" />
+          Selected
+        </span>
+      )}
+      {resolved && (
+        <div className="rv-done" role="status">
+          <Icon name="checkCircle" size="lg" />
+          <div>
+            <b>Resolved</b>
+            <div className="small">{resolved}</div>
+          </div>
+        </div>
+      )}
       <div className={cx('rv-crops', item.type === 'REID' && 'pair-wide')}>
         <label className="check xs" style={{ alignItems: 'center' }}>
           <input type="checkbox" checked={selected} onChange={onSelect} aria-label={`Select ${item.code}`} />{' '}

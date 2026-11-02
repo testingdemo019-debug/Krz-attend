@@ -1,5 +1,6 @@
 /** The Review Queue's Resolved tab (the prototype's review-resolved dataTable), served page by page. */
 import { useMemo } from 'react';
+import { useSearchParams } from 'react-router';
 import { apiUrl } from '@/api/client';
 import { useClosedReviewItems, useReviewFacets, type ReviewItem } from '@/api/review';
 import { DataTable, type Column } from '@/components/data/DataTable';
@@ -101,6 +102,8 @@ export function ResolvedTable() {
   };
   const result = useClosedReviewItems({ ...filterQuery, page: state.page - 1, size: state.size });
   const now = useNow(60_000);
+  // The item a decision's toast links to (?resolved=RV-…), marked in the list (D-121).
+  const [params] = useSearchParams();
 
   return (
     <DataTable
@@ -113,6 +116,7 @@ export function ResolvedTable() {
       noun="resolved items"
       noun1="resolved item"
       empty={{ icon: 'history', title: 'No resolved items yet' }}
+      marked={params.get('resolved')}
       exportCsv={{
         href: apiUrl('/review/export', filterQuery),
         fileName: exportFileName('review-history', now),

@@ -4596,6 +4596,8 @@ export interface components {
             logoUrl: string | null;
             orgName: string;
             punchRules: components["schemas"]["MeController.PunchRules"];
+            /** Format: int32 */
+            reviewWaitMinutes: number;
             timeFormat: string;
             timezone: string;
             /** Format: int32 */

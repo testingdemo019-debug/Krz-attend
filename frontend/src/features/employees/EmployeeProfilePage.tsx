@@ -31,7 +31,7 @@ import { Chip, Tag } from '@/components/ui/Chip';
 import { IconButton } from '@/components/ui/IconButton';
 import { KeyValueList } from '@/components/ui/KeyValueList';
 import { MenuItem, MenuSeparator, Popover } from '@/components/ui/Popover';
-import { Skeleton } from '@/components/ui/Skeleton';
+import { ProfileSkeleton } from '@/components/ui/Skeleton';
 import { Tabs } from '@/components/ui/Tabs';
 import { tip } from '@/components/ui/Tooltip';
 import { copyText } from '@/lib/clipboard';
@@ -75,13 +75,7 @@ export function EmployeeProfilePage() {
   const profile = query.data;
   usePageTitle(profile?.identity.displayName ?? (query.error ? 'Employee not found' : undefined));
 
-  if (query.isPending) {
-    return (
-      <div className="card pad">
-        <Skeleton className="sk-line" width="40%" />
-      </div>
-    );
-  }
+  if (query.isPending) return <ProfileSkeleton />;
   if (!profile) {
     return query.error instanceof ApiError && query.error.status === 404 ? (
       <div className="card">

@@ -19,6 +19,11 @@ table.dt tr:last-child td{border-bottom:0}
 table.dt tbody tr.clickable{cursor:pointer}
 table.dt tbody tr:hover td{background:var(--surface-2)}
 table.dt tbody tr.selected td{background:var(--accent-weak)}
+/* A row pointed out (the review item just resolved, D-121): a green edge that fades in once. */
+table.dt tbody tr.marked td{background:var(--green-bg);animation:dt-marked 1.6s ease-out}
+table.dt tbody tr.marked td:first-child{box-shadow:inset 3px 0 0 var(--green-line)}
+@keyframes dt-marked{from{background:color-mix(in srgb,var(--green-line) 35%,var(--green-bg))}}
+@media (prefers-reduced-motion:reduce){table.dt tbody tr.marked td{animation:none}}
 table.dt td.num,table.dt th.num{text-align:right}
 .dt-footer{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;border-top:1px solid var(--border);font-size:12.5px;color:var(--text-2);flex-wrap:wrap}
 .pager{display:flex;align-items:center;gap:6px}

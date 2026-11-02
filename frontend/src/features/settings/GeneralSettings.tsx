@@ -8,7 +8,7 @@ import { ErrorState } from '@/components/feedback/EmptyState';
 import { toast } from '@/components/feedback/toast';
 import { Icon } from '@/components/icons/Icon';
 import { Button } from '@/components/ui/Button';
-import { SkeletonRows } from '@/components/ui/Skeleton';
+import { FormSkeleton } from '@/components/ui/Skeleton';
 import { BrandMark } from '@/components/layout/BrandMark';
 import { useDraft } from '@/lib/useDraft';
 import { SettingField, SettingsCard } from './SettingsCard';
@@ -23,7 +23,7 @@ export function GeneralSettings() {
   if (!general.data) {
     return (
       <SettingsCard title={TITLE} sub={SUB}>
-        <SkeletonRows rows={3} columns={2} />
+        <FormSkeleton rows={3} />
       </SettingsCard>
     );
   }

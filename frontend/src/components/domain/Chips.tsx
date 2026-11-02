@@ -21,12 +21,12 @@ const MUTED_DASH = <span className="muted">—</span>;
 /** IN (green) or OUT (blue) with the arrow. */
 export function DirectionChip({ direction }: { direction: string }) {
   return direction === 'IN' ? (
-    <span className="dir dir-in">
+    <span className="dir dir-in" title="Walking in">
       <Icon name="arrowIn" size="sm" />
       IN
     </span>
   ) : (
-    <span className="dir dir-out">
+    <span className="dir dir-out" title="Walking out">
       <Icon name="arrowOut" size="sm" />
       OUT
     </span>
@@ -36,13 +36,17 @@ export function DirectionChip({ direction }: { direction: string }) {
 export function EffectChip({ effect }: { effect: string | null }) {
   const t = term(EFFECTS, effect);
   if (!effect) return MUTED_DASH;
-  return <Chip tone={t?.tone ?? 'grey'}>{t?.label ?? effect}</Chip>;
+  return (
+    <Chip tone={t?.tone ?? 'grey'} title={t?.description}>
+      {t?.label ?? effect}
+    </Chip>
+  );
 }
 
 export function FaceStatusChip({ status }: { status: string }) {
   const t = term(FACE_STATUS, status);
   return (
-    <Chip tone={t?.tone} icon={t?.icon}>
+    <Chip tone={t?.tone} icon={t?.icon} title={t?.description}>
       {t?.label ?? status}
     </Chip>
   );
@@ -60,7 +64,7 @@ export function MethodLabel({ method }: { method: string | null }) {
   const m = term(METHODS, method);
   if (!m) return MUTED_DASH;
   return (
-    <span className="src">
+    <span className="src" title={m.description}>
       <Icon name={m.icon} size="sm" />
       {m.label}
     </span>
@@ -75,7 +79,7 @@ export function LivenessBadge({ result }: { result: string | null }) {
   const t = term(LIVENESS, result);
   if (!t) return MUTED_DASH;
   return (
-    <Chip tone={t.tone} icon={t.icon}>
+    <Chip tone={t.tone} icon={t.icon} title={t.description}>
       {t.label}
     </Chip>
   );
@@ -84,7 +88,7 @@ export function LivenessBadge({ result }: { result: string | null }) {
 export function HrmsStatusChip({ status }: { status: string }) {
   const t = term(HRMS_STATUS, status);
   return (
-    <Chip tone={t?.tone ?? 'grey'} icon={t?.icon ?? 'dot'}>
+    <Chip tone={t?.tone ?? 'grey'} icon={t?.icon ?? 'dot'} title={t?.description}>
       {t?.label ?? status}
     </Chip>
   );
@@ -99,7 +103,11 @@ export function ConfidenceBadge({ band, score }: { band: string | null; score: n
   if (showScores && score !== null) return <span className="mono">{score.toFixed(3)}</span>;
   const t = term(CONFIDENCE, band);
   if (!t) return MUTED_DASH;
-  return <Chip tone={t.tone}>{t.label}</Chip>;
+  return (
+    <Chip tone={t.tone} title={t.description}>
+      {t.label}
+    </Chip>
+  );
 }
 
 /**
@@ -151,7 +159,7 @@ export function TrackingChip({ tracked, label }: { tracked: boolean; label: stri
 export function ConsentChip({ status }: { status: string }) {
   const t = term(CONSENT_STATUS, status) ?? CONSENT_STATUS.NONE;
   return (
-    <Chip tone={t.tone} icon={t.icon}>
+    <Chip tone={t.tone} icon={t.icon} title={t.description}>
       {t.label}
     </Chip>
   );

@@ -79,7 +79,8 @@ export function AttendanceLogPage() {
   const today = todayDay(now);
   const highlight = params.get('day');
   const to = params.get('to') ?? today;
-  const from = params.get('from') ?? addDays(to, -6);
+  // Today by default, so the day's records are there at once (D-121); the quick ranges and dates change it.
+  const from = params.get('from') ?? to;
   const includeNotTracked = params.get('nt') === '1';
 
   // The prototype's ?day=: a week around that day, its missing check-outs.
@@ -198,9 +199,10 @@ export function AttendanceLogPage() {
     [days, highlight, openDay],
   );
 
-  const preset = (key: 'week' | '7' | '14' | 'month'): void => {
+  const preset = (key: 'today' | 'week' | '7' | '14' | 'month'): void => {
     const t = todayDay();
-    if (key === 'week') setRange(addDays(t, -((weekdayOf(t) + 6) % 7)), t);
+    if (key === 'today') setRange(t, t);
+    else if (key === 'week') setRange(addDays(t, -((weekdayOf(t) + 6) % 7)), t);
     else if (key === 'month') setRange(`${t.slice(0, 8)}01`, t);
     else setRange(addDays(t, -(Number(key) - 1)), t);
   };
@@ -267,6 +269,7 @@ export function AttendanceLogPage() {
           <div className="row wrap gap-4" style={{ alignSelf: 'flex-end' }}>
             {(
               [
+                ['Today', 'today'],
                 ['This week', 'week'],
                 ['Last 7 days', '7'],
                 ['Last 14 days', '14'],

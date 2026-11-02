@@ -3,6 +3,17 @@
 .rv-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow-1);display:grid;grid-template-columns:auto minmax(0,1fr) minmax(260px,330px);gap:16px;padding:14px;transition:border-color .12s,box-shadow .12s}
 .rv-card.current{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-weak)}
 .rv-card.leaving{animation:leave .3s ease forwards}
+/* D-121: the card being decided ("Selected", its dialog open or its decision on the way), then what was decided. */
+.rv-card{position:relative}
+.rv-card.active{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-weak),var(--shadow-2)}
+.rv-flag{position:absolute;top:-11px;right:16px;z-index:1;display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 10px;border-radius:999px;background:var(--accent);color:var(--on-accent);font-size:11.5px;font-weight:650;box-shadow:var(--shadow-1)}
+.rv-card.resolved{border-color:var(--green-line);box-shadow:0 0 0 3px var(--green-bg)}
+.rv-done{position:absolute;inset:0;z-index:2;display:flex;align-items:center;justify-content:center;gap:12px;border-radius:inherit;background:color-mix(in srgb,var(--green-bg) 92%,transparent);color:var(--green);text-align:left;animation:rv-done .25s ease-out}
+.rv-done b{font-size:15px}
+@keyframes rv-done{from{opacity:0;transform:scale(.98)}}
+.rv-subject{display:flex;align-items:center;gap:10px;margin:2px 0 10px;padding:8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface-2);color:var(--text)}
+.rv-subject .crop{width:44px;height:44px;border-radius:8px;flex:none}
+@media (prefers-reduced-motion:reduce){.rv-done{animation:none}}
 @keyframes leave{to{opacity:0;transform:translateX(20px)}}
 @media (max-width:1180px){.rv-card{grid-template-columns:auto minmax(0,1fr)}.rv-card .rv-actions{grid-column:1/-1}}
 .rv-crops{display:flex;flex-direction:column;gap:8px;width:148px}

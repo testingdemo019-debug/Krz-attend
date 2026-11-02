@@ -10,6 +10,8 @@ import '@/components/form/Field.module.css';
 
 export interface ConfirmOptions {
   title: string;
+  /** What the decision is about (e.g. the review item: crop, code and name), above the message. */
+  subject?: ReactNode;
   message?: ReactNode;
   confirmText?: string;
   danger?: boolean;
@@ -109,6 +111,7 @@ function ConfirmDialog({
         </>
       }
     >
+      {o.subject}
       <p>{o.message}</p>
       {o.reasons && (
         <div className="field mt-12">

@@ -1,10 +1,12 @@
 """Builds the models from models.json and MODELS_DIR: verifies every file's SHA-256 (a mismatch is fatal), opens the
 ONNX Runtime sessions on the configured execution provider (TensorRT FP16 with an engine cache, else CUDA, else CPU;
-the fallback is logged once) and warms each model up."""
+the fallback is logged once) and warms each model up. The Re-ID model runs on TensorRT whatever the provider is
+(``reid``); where TensorRT is missing the worker runs without it and Re-ID is off."""
 
 from __future__ import annotations
 
 import hashlib
+import importlib
 import json
 import logging
 from dataclasses import dataclass
@@ -26,7 +28,7 @@ from krz_worker.models.face_detector import YuNetFaceDetector
 from krz_worker.models.face_embedder import SFaceEmbedder
 from krz_worker.models.liveness import MiniFasNetLiveness
 from krz_worker.models.person_detector import YoloxPersonDetector
-from krz_worker.models.reid import OsnetReIdEmbedder
+from krz_worker.models.reid import HEIGHT, MAX_BATCH, WIDTH, NvidiaReIdEmbedder
 
 LOG = logging.getLogger(__name__)
 
@@ -46,7 +48,8 @@ class Models:
     face_detector: FaceDetector
     face_embedder: FaceEmbedder
     person_detector: PersonDetector
-    reid: ReIdEmbedder
+    #: None where TensorRT is not available: no body embeddings, Re-ID is off.
+    reid: ReIdEmbedder | None
     liveness: LivenessChecker
     #: Every catalogue entry, as /health and the worker heartbeat report them.
     files: tuple[ModelInfo, ...]
@@ -55,8 +58,8 @@ class Models:
 
     @property
     def model_version(self) -> str:
-        """The crossing message's ``model_version``: yunet-2023mar+sface-2021dec+osnet-x1_0-msmt17."""
-        return "+".join(m.info.tag for m in (self.face_detector, self.face_embedder, self.reid))
+        """The crossing message's ``model_version``: yunet-2023mar+sface-2021dec+reidentificationnet-deployable_v1.2."""
+        return "+".join(m.info.tag for m in (self.face_detector, self.face_embedder, self.reid) if m is not None)
 
 
 def load(settings: Settings) -> Models:
@@ -75,11 +78,18 @@ def load(settings: Settings) -> Models:
     person_detector = by_role["person_detector"][0]
     reid = by_role["reid"][0]
     liveness = sorted(by_role["liveness"], key=_scale)
+    reid_session = sessions.open_on_tensorrt(path(reid))
+    if reid_session is None:
+        LOG.error(
+            "Back-view Re-ID is off: %s runs only on TensorRT with an NVIDIA GPU, which is not available here "
+            "(see the worker's gpu extra). An OUT without a face goes to review.",
+            reid.file,
+        )
     models = Models(
         face_detector=YuNetFaceDetector(face_detector, path(face_detector)),
         face_embedder=SFaceEmbedder(face_embedder, path(face_embedder), sessions.open(path(face_embedder))),
         person_detector=YoloxPersonDetector(person_detector, sessions.open(path(person_detector))),
-        reid=OsnetReIdEmbedder(reid, sessions.open(path(reid))),
+        reid=NvidiaReIdEmbedder(reid, reid_session) if reid_session is not None else None,
         liveness=MiniFasNetLiveness(
             ModelInfo(
                 role="liveness",
@@ -95,7 +105,8 @@ def load(settings: Settings) -> Models:
         provider=sessions.provider,
     )
     for model in (models.face_detector, models.face_embedder, models.person_detector, models.reid, models.liveness):
-        model.warm_up()
+        if model is not None:
+            model.warm_up()
     LOG.info("Models ready on %s: %s", models.provider, models.model_version)
     return models
 
@@ -123,6 +134,7 @@ def _scale(info: ModelInfo) -> float:
 
 class _SessionFactory:
     def __init__(self, settings: Settings) -> None:
+        self._settings = settings
         wanted = _PROVIDERS[settings.execution_provider]
         available = set(ort.get_available_providers())
         if wanted[0] != "CPUExecutionProvider" and "CUDAExecutionProvider" in available:
@@ -155,3 +167,30 @@ class _SessionFactory:
         if used != self._providers[0][0]:
             LOG.warning("%s runs on %s instead of %s", path.name, used, self._providers[0][0])
         return session
+
+    def open_on_tensorrt(self, path: Path) -> Any | None:
+        """A session on TensorRT and nothing else, or None where TensorRT is missing. Its engine is built once for
+        the Re-ID model's batch sizes (about a minute) and cached, so a later start takes seconds."""
+        if "TensorrtExecutionProvider" not in ort.get_available_providers():
+            return None
+        ort.preload_dlls()
+        try:
+            # NVIDIA's pip wheel: importing it loads the libraries, which ONNX Runtime does not find by itself.
+            importlib.import_module("tensorrt_libs")
+        except ImportError:
+            return None
+        self._settings.trt_cache_dir.mkdir(parents=True, exist_ok=True)
+        shape = f"3x{HEIGHT}x{WIDTH}"
+        options = {
+            "device_id": self._settings.gpu_device,
+            "trt_fp16_enable": True,
+            "trt_engine_cache_enable": True,
+            "trt_engine_cache_path": str(self._settings.trt_cache_dir),
+            # "input" is the model's input name (models.json).
+            "trt_profile_min_shapes": f"input:1x{shape}",
+            "trt_profile_opt_shapes": f"input:1x{shape}",
+            "trt_profile_max_shapes": f"input:{MAX_BATCH}x{shape}",
+        }
+        session = ort.InferenceSession(str(path), self._options, providers=[("TensorrtExecutionProvider", options)])
+        # ONNX Runtime falls back to the CPU by itself when TensorRT cannot start, for example without a GPU.
+        return session if session.get_providers()[0] == "TensorrtExecutionProvider" else None

@@ -39,7 +39,7 @@ import { Callout } from '@/components/ui/Callout';
 import { Chip } from '@/components/ui/Chip';
 import { LivePill } from '@/components/ui/LivePill';
 import { Segmented } from '@/components/ui/Segmented';
-import { SkeletonRows } from '@/components/ui/Skeleton';
+import { FormSkeleton, SkeletonRows } from '@/components/ui/Skeleton';
 import { Spinner } from '@/components/ui/Spinner';
 import { fmtDate } from '@/lib/format';
 import { drawGeometry } from '@/lib/overlays';
@@ -182,7 +182,7 @@ function ExistingCamera({ code }: { code: string }) {
   if (!camera.data) {
     return (
       <div className="card pad">
-        <SkeletonRows rows={8} columns={2} />
+        <FormSkeleton rows={8} />
       </div>
     );
   }

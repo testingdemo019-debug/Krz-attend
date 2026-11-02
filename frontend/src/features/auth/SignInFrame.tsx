@@ -1,4 +1,8 @@
-/** What every sign-in and access screen shares: the card, the brand header, and the footer with the privacy notice. */
+/**
+ * What every sign-in and access screen shares (D-121): two panels — the brand panel with the KRZ mark, the camera-scan
+ * animation and what KRZ Attend does; and the card with the footer (privacy notice, version, "Internal use only"). On
+ * a narrow screen the brand panel becomes a band above the card.
+ */
 import { useQuery } from '@tanstack/react-query';
 import { useState, type ReactNode } from 'react';
 import { request } from '@/api/client';
@@ -6,23 +10,13 @@ import { useBranding, type Branding } from '@/api/me';
 import type { components } from '@/api/schema';
 import { NoticeText } from '@/components/domain/NoticeText';
 import { BrandMark } from '@/components/layout/BrandMark';
+import { KrzWordmark } from '@/components/layout/KrzLogo';
 import { Modal } from '@/components/feedback/Modal';
 import { fmtDate } from '@/lib/format';
+import { ScanAnimation } from './ScanAnimation';
 import './SignIn.module.css';
 
 type PublicNotice = components['schemas']['PublicNoticeController.PublicNotice'];
-
-export function BrandHeader({ branding }: { branding: Branding | undefined }) {
-  return (
-    <div className="row gap-12 mb-16">
-      <BrandMark logoUrl={branding?.logoUrl} size={44} style={{ borderRadius: 11 }} />
-      <div>
-        <div style={{ fontWeight: 700, fontSize: 20 }}>KRZ Attend</div>
-        <div className="muted small">{branding?.orgName}</div>
-      </div>
-    </div>
-  );
-}
 
 function PrivacyNotice({ open, onClose }: { open: boolean; onClose: () => void }) {
   const notice = useQuery({
@@ -43,7 +37,35 @@ function PrivacyNotice({ open, onClose }: { open: boolean; onClose: () => void }
   );
 }
 
-/** The prototype's .signin page: the card, then the footer (privacy notice, version, "Internal use only"). */
+/** The brand panel: the mark (an uploaded logo when there is one), the scan loop and three facts. */
+function BrandPanel({ branding }: { branding: Branding | undefined }) {
+  return (
+    <aside className="signin-hero" aria-label="KRZ Attend">
+      <div className="hero-brand">
+        {branding?.logoUrl ? (
+          <BrandMark logoUrl={branding.logoUrl} size={40} style={{ borderRadius: 10 }} />
+        ) : (
+          <KrzWordmark className="hero-mark" />
+        )}
+        <div>
+          <div className="hero-name">KRZ Attend</div>
+          <div className="hero-org">{branding?.orgName}</div>
+        </div>
+      </div>
+      <ScanAnimation />
+      <div className="hero-copy">
+        <h2>Walk in. You’re checked in.</h2>
+        <p>The camera at the door recognises people as they pass and records attendance by itself.</p>
+        <ul className="hero-facts">
+          <li>Face and back-view recognition</li>
+          <li>Liveness check against photos</li>
+          <li>Live attendance, every shift</li>
+        </ul>
+      </div>
+    </aside>
+  );
+}
+
 export function SignInFrame({
   wide = false,
   live = false,
@@ -58,29 +80,32 @@ export function SignInFrame({
   const [notice, setNotice] = useState(false);
   return (
     <div className="signin">
-      <main
-        className="signin-card"
-        style={wide ? { width: 'min(520px,100%)' } : undefined}
-        aria-labelledby="si-title"
-        aria-live={live ? 'polite' : undefined}
-      >
-        {children(branding)}
-      </main>
-      <footer className="signin-foot">
-        <a
-          href="#privacy"
-          onClick={event => {
-            event.preventDefault();
-            setNotice(true);
-          }}
+      <BrandPanel branding={branding} />
+      <div className="signin-main">
+        <main
+          className="signin-card"
+          style={wide ? { width: 'min(520px,100%)' } : undefined}
+          aria-labelledby="si-title"
+          aria-live={live ? 'polite' : undefined}
         >
-          Privacy notice
-        </a>
-        <span aria-hidden="true">·</span>
-        <span>KRZ Attend {branding?.appVersion}</span>
-        <span aria-hidden="true">·</span>
-        <span>Internal use only</span>
-      </footer>
+          {children(branding)}
+        </main>
+        <footer className="signin-foot">
+          <a
+            href="#privacy"
+            onClick={event => {
+              event.preventDefault();
+              setNotice(true);
+            }}
+          >
+            Privacy notice
+          </a>
+          <span aria-hidden="true">·</span>
+          <span>KRZ Attend {branding?.appVersion}</span>
+          <span aria-hidden="true">·</span>
+          <span>Internal use only</span>
+        </footer>
+      </div>
       <PrivacyNotice
         open={notice}
         onClose={() => {

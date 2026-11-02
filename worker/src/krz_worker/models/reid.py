@@ -1,6 +1,8 @@
-"""OSNet x1.0 (torchreid, MSMT17) on ONNX Runtime: 512-d back-view body embeddings for same-day Re-ID.
+"""NVIDIA ReIdentificationNet (TAO, ResNet50) on TensorRT: 256-d body embeddings for same-day Re-ID.
 
-Input: person crops resized to 256x128, RGB, ImageNet mean and standard deviation (torchreid's test transform).
+Input: person crops resized to 256x128, RGB, with TAO's pixel mean and standard deviation. NVIDIA's licence covers
+systems with NVIDIA GPUs and its model card names TensorRT as the way to run it, so the session is TensorRT only
+(``registry``); where TensorRT is missing there is no embedder and Re-ID is off.
 """
 
 from __future__ import annotations
@@ -15,11 +17,13 @@ from krz_worker.models.face_embedder import normalise
 
 HEIGHT, WIDTH = 256, 128
 MEAN = np.array([0.485, 0.456, 0.406], dtype=np.float32)
-STD = np.array([0.229, 0.224, 0.225], dtype=np.float32)
+STD = np.float32(0.226)
+#: The batch sizes the TensorRT engine is built for; a size outside them would stop the camera to rebuild it.
+MAX_BATCH = 8
 
 
-class OsnetReIdEmbedder(ReIdEmbedder):
-    dim = 512
+class NvidiaReIdEmbedder(ReIdEmbedder):
+    dim = 256
 
     def __init__(self, info: ModelInfo, session: Any) -> None:
         super().__init__(info)

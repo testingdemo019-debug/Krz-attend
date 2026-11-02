@@ -1,6 +1,6 @@
 /**
  * Events (the prototype's #/events): every crossing with the punch effect the rules gave it, newest first, served page
- * by page. Default range yesterday and today; ?day= and ?employee= set the filters, ?id= opens a crossing.
+ * by page. Default range today (D-121); ?day= and ?employee= set the filters, ?id= opens a crossing.
  */
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router';
@@ -197,7 +197,6 @@ export function EventsPage() {
   const [help, setHelp] = useState(false);
   const now = useNow(60_000);
   const today = todayDay(now);
-  const yesterday = addDays(today, -1);
   const dayParam = params.get('day');
   const employeeParam = params.get('employee');
   const idParam = params.get('id');
@@ -235,8 +234,8 @@ export function EventsPage() {
   }, [idParam, openEvent, setParams]);
 
   const dateFilter = useMemo<RangeFilter>(
-    () => ({ key: 'date', label: 'Date', range: true, defaultRange: { from: yesterday, to: today } }),
-    [yesterday, today],
+    () => ({ key: 'date', label: 'Date', range: true, defaultRange: { from: today, to: today } }),
+    [today],
   );
   const range = rangeOf(params, dateFilter);
   const from = range.from || addDays(today, -RETENTION_DAYS);

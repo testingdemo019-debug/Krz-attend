@@ -2,7 +2,7 @@
 import { useEnrolmentSettings, useSaveEnrolmentSettings, type EnrolmentSettingsView } from '@/api/settings';
 import { ErrorState } from '@/components/feedback/EmptyState';
 import { Switch } from '@/components/form/Switch';
-import { SkeletonRows } from '@/components/ui/Skeleton';
+import { FormSkeleton } from '@/components/ui/Skeleton';
 import { useDraft } from '@/lib/useDraft';
 import { SettingField, SettingsCard } from './SettingsCard';
 
@@ -18,7 +18,7 @@ export function EnrolmentSettings() {
   if (!view.data) {
     return (
       <SettingsCard title={TITLE} sub={SUB}>
-        <SkeletonRows rows={5} columns={2} />
+        <FormSkeleton rows={5} />
       </SettingsCard>
     );
   }

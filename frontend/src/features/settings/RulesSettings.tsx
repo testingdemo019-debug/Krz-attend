@@ -16,7 +16,7 @@ import { Button } from '@/components/ui/Button';
 import { Callout } from '@/components/ui/Callout';
 import { IconButton } from '@/components/ui/IconButton';
 import { KeyValueList } from '@/components/ui/KeyValueList';
-import { SkeletonRows } from '@/components/ui/Skeleton';
+import { FormSkeleton } from '@/components/ui/Skeleton';
 import { ScrollArea } from '@/components/layout/ScrollArea';
 import {
   addDays,
@@ -133,7 +133,7 @@ export function RulesSettings() {
   if (!rules.data) {
     return (
       <SettingsCard title={TITLE} sub={SUB}>
-        <SkeletonRows rows={4} columns={2} />
+        <FormSkeleton rows={4} />
       </SettingsCard>
     );
   }

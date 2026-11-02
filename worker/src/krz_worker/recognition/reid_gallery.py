@@ -83,9 +83,10 @@ class ReIdGallery:
             self._redis.hdel(INDEX, *expired)
         scores = []
         for employee, values in zip(employees, lists, strict=True):
-            if values:
-                gallery = np.stack([decode(v) for v in values])
-                scores.append(Match(employee, round(float((gallery @ bodies.T).max()), 4)))
+            # On the day the Re-ID model changes a list can still hold the old model's embeddings: they do not compare.
+            usable = [vector for vector in map(decode, values) if vector.size == bodies.shape[1]]
+            if usable:
+                scores.append(Match(employee, round(float((np.stack(usable) @ bodies.T).max()), 4)))
         return sorted(scores, key=lambda m: m.score, reverse=True)[:k]
 
     def bind(self, crossing_uid: str, employee_id: str) -> None:

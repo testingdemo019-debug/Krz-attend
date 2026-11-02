@@ -3,12 +3,14 @@
 .brand{height:var(--topbar-h);display:flex;align-items:center;gap:10px;padding:0 16px;border-bottom:1px solid var(--border);flex:none}
 .brand-logo{width:30px;height:30px;border-radius:8px;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;font-weight:700;font-size:13px;flex:none;overflow:hidden}
 .brand-logo img{width:100%;height:100%;object-fit:cover}
-/* A logo is shown whole on white in both themes: an uploaded one (square or wide), or the KRZ Technologies mark
-   (the wordmark; the "K" alone when the sidebar is collapsed). */
-.brand-logo.logo,.brand-logo.krz{width:auto;background:#fff;border:1px solid var(--border)}
+/* An uploaded logo is shown whole on white (its own background is unknown); the KRZ Technologies mark sits straight on
+   the page in the theme's colours (D-121): the wordmark, the "K" alone when the sidebar is collapsed. */
+.brand-logo.logo,.brand-logo.krz{width:auto}
+.brand-logo.logo{background:#fff;border:1px solid var(--border)}
+.brand-logo.krz{background:none;border-radius:0}
 .brand-logo.logo img{width:auto;max-width:96px;object-fit:contain}
-.brand-logo.krz{padding:0 6px}
-.brand-logo.krz img{width:auto;height:58%;object-fit:contain}
+.brand-logo.krz{padding:0 2px}
+.brand-logo.krz svg{width:auto;height:66%;display:block}
 .brand-logo.krz .krz-k{display:none}
 /* Square in a narrow sidebar: collapsed, or below 900 px where the shell narrows it (AppShell). */
 .shell.collapsed .brand-logo.logo,.shell.collapsed .brand-logo.krz{width:30px;padding:0}

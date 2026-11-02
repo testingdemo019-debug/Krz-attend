@@ -1,6 +1,8 @@
 /**
  * /signin (F9): the prototype's first screen. The work e-mail is checked here (format and domain), again by the
  * server, then the browser goes to Microsoft (/oauth2/authorization/azure with login_hint and a validated returnTo).
+ * "Sign in with Microsoft" goes there without an e-mail, to Microsoft's account picker (D-121); both sign in with the
+ * organisation's Microsoft work account — there is no password of KRZ Attend's own.
  * Notices (?notice=) and sign-in failures (?error=) use the prototype's wording; the simulated Microsoft screens are
  * gone (F5).
  */
@@ -17,7 +19,7 @@ import { Spinner } from '@/components/ui/Spinner';
 import type { IconName } from '@/components/icons/Icon';
 import { usePageTitle } from '@/lib/usePageTitle';
 import { signInSchema, type SignInInput, type SignInValues } from './schemas';
-import { BrandHeader, SignInFrame } from './SignInFrame';
+import { SignInFrame } from './SignInFrame';
 import '@/components/form/Field.module.css';
 
 const NOTICES: Record<string, readonly [CalloutTone, IconName, string]> = {
@@ -75,16 +77,19 @@ export function SignInPage() {
     <SignInFrame live={redirecting !== null}>
       {branding => {
         const message = errors.email?.message ?? errorText(failure, domain);
-        const submit = handleSubmit(({ email }) => {
+        const toMicrosoft = (email: string): void => {
           setRedirecting(email);
-          const query = new URLSearchParams({ login_hint: email });
+          const query = new URLSearchParams(email ? { login_hint: email } : {});
           if (returnTo) query.set('returnTo', returnTo);
-          window.location.assign(`/oauth2/authorization/azure?${query.toString()}`);
+          const search = query.toString();
+          window.location.assign(`/oauth2/authorization/azure${search ? `?${search}` : ''}`);
+        };
+        const submit = handleSubmit(({ email }) => {
+          toMicrosoft(email);
         });
         if (redirecting !== null) {
           return (
             <>
-              <BrandHeader branding={branding} />
               <div className="row gap-12" style={{ padding: '18px 0' }}>
                 <Spinner dark />
                 <div>
@@ -92,10 +97,12 @@ export function SignInPage() {
                   <div className="muted small mt-4">Microsoft work account</div>
                 </div>
               </div>
-              <button type="button" className="email-chip" disabled aria-label="Account">
-                <Icon name="user" size="sm" />
-                <span>{redirecting}</span>
-              </button>{' '}
+              {redirecting && (
+                <button type="button" className="email-chip" disabled aria-label="Account">
+                  <Icon name="user" size="sm" />
+                  <span>{redirecting}</span>
+                </button>
+              )}{' '}
               <a
                 href="/signin"
                 className="small"
@@ -105,23 +112,22 @@ export function SignInPage() {
                   setRedirecting(null);
                 }}
               >
-                Not you?
+                {redirecting ? 'Not you?' : 'Back'}
               </a>
             </>
           );
         }
         return (
           <>
-            <BrandHeader branding={branding} />
             {notice && (
               <Callout tone={notice[0]} icon={notice[1]} role="status" className="mb-16">
                 {notice[2]}
               </Callout>
             )}
-            <h1 id="si-title" style={{ fontSize: 20 }}>
-              Sign in
+            <h1 id="si-title" style={{ fontSize: 22 }}>
+              Sign in to KRZ Attend
             </h1>
-            <p className="muted small mt-4 mb-16">Use your KRZ Technologies work account.</p>
+            <p className="muted small mt-4 mb-16">Use your {branding?.orgName ?? 'KRZ Technologies'} work account.</p>
             <form noValidate onSubmit={event => void submit(event)}>
               <div className="field">
                 <label htmlFor={`${fieldId}-email`}>Work email</label>
@@ -144,6 +150,12 @@ export function SignInPage() {
                 Continue
               </Button>
             </form>
+            <div className="si-or">or</div>
+            <MicrosoftButton
+              onClick={() => {
+                toMicrosoft('');
+              }}
+            />
             <p className="small mt-24 si-help">
               Trouble signing in? Contact IT
               {branding?.helpdeskEmail ? (
@@ -162,13 +174,27 @@ export function SignInPage() {
   );
 }
 
+/** Microsoft's sign-in button: its four-square logo and wording, as Microsoft's branding guidelines give them. */
+function MicrosoftButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button type="button" className="ms-btn" onClick={onClick}>
+      <svg viewBox="0 0 21 21" aria-hidden="true">
+        <rect x="1" y="1" width="9" height="9" fill="#f25022" />
+        <rect x="11" y="1" width="9" height="9" fill="#7fba00" />
+        <rect x="1" y="11" width="9" height="9" fill="#00a4ef" />
+        <rect x="11" y="11" width="9" height="9" fill="#ffb900" />
+      </svg>
+      Sign in with Microsoft
+    </button>
+  );
+}
+
 /** Microsoft accepted the account, but the directory sync has not brought it into KRZ Attend (not_in_scope). */
 function NotSetUp() {
   return (
     <SignInFrame wide>
       {branding => (
         <>
-          <BrandHeader branding={branding} />
           <div className="empty-ic round-ic amber">
             <Icon name="userX" size="lg" />
           </div>

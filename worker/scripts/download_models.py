@@ -1,12 +1,17 @@
 """Download and export the worker's models into MODELS_DIR, check or record their SHA-256, and render MODELS.md.
 
 1. Every model with a ``url`` in worker/models/models.json is downloaded (skipped when the file already matches).
-2. The exported models (OSNet, MiniFASNet) are built in a temporary virtual environment with torch, which is deleted
+2. The exported models (MiniFASNet) are built in a temporary virtual environment with torch, which is deleted
    afterwards: torch never reaches the worker image.
 3. A file must match the ``sha256`` in models.json. When models.json has none yet (first download or export) it is
    recorded, but only with ``--record``; a later mismatch stops the script.
-4. worker/models/MODELS.md is rendered from models.json with each file's licence, source, SHA-256 and input/output
-   shapes.
+4. A model file that is no longer in models.json is removed from MODELS_DIR.
+5. worker/models/MODELS.md is rendered from models.json with each file's licence, source, SHA-256 and input/output
+   shapes. models.json itself is only rewritten when something in it changed (it is in Git; a pull must not meet a
+   local change).
+
+start-all.ps1 runs this script after a pull. NVIDIA's Re-ID model comes from NVIDIA NGC under its Deep Learning Models
+License Agreement (see models.json).
 
 Usage (from worker/, with the worker's virtual environment):
     python scripts/download_models.py [--models-dir ../data/models] [--record] [--skip-export]
@@ -119,6 +124,15 @@ def export(entries: list[dict[str, Any]], models_dir: Path, record: bool) -> Non
         accept(entry, models_dir / entry["file"], record)
 
 
+def remove_retired(entries: list[dict[str, Any]], models_dir: Path) -> None:
+    """A model that left the catalogue does not stay on the machine: its licence may be why it left."""
+    known = {entry["file"] for entry in entries}
+    for file in models_dir.glob("*.onnx"):
+        if file.name not in known:
+            file.unlink()
+            print(f"{file.name}: no longer in the catalogue, removed")
+
+
 def describe(path: Path) -> dict[str, list[str]]:
     """Input and output names, shapes and types as ONNX Runtime reports them."""
     options = ort.SessionOptions()
@@ -139,8 +153,9 @@ def render(catalog: dict[str, Any]) -> str:
         f"on {dt.date.today().isoformat()}. Do not edit by hand.",
         "The `.onnx` files live in `MODELS_DIR` (`data/models`, mounted read-only at `/models`), never in the "
         "repository or the image. The worker verifies every SHA-256 at start-up and refuses to run on a mismatch.",
-        "Only permissive licences are allowed: no YOLOv8/YOLO11 (AGPL), no InsightFace/ArcFace/SCRFD weights "
-        "(non-commercial).",
+        "Only licences that allow commercial use: permissive ones, and NVIDIA's for its Re-ID model (on NVIDIA GPUs, "
+        "through TensorRT, never handed out on its own). No YOLOv8/YOLO11 (AGPL), no InsightFace/ArcFace/SCRFD weights "
+        "(non-commercial), no weights trained on research-only data such as MSMT17.",
         "",
     ]
     for entry in catalog["models"]:
@@ -174,12 +189,15 @@ def main() -> None:
         download(entry, models_dir, args.record)
     if not args.skip_export:
         export([e for e in entries if "export" in e], models_dir, args.record)
+    remove_retired(entries, models_dir)
     for entry in entries:
         path = models_dir / entry["file"]
-        if path.is_file():
+        if path.is_file() and "inputs" not in entry:
             entry.update(describe(path))
 
-    CATALOG.write_text(json.dumps(catalog, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    text = json.dumps(catalog, indent=2, ensure_ascii=False) + "\n"
+    if CATALOG.read_text(encoding="utf-8") != text:
+        CATALOG.write_text(text, encoding="utf-8", newline="\n")
     MODELS_MD.write_text(render(catalog), encoding="utf-8")
     print(f"models in {models_dir}; wrote {CATALOG.name} and {MODELS_MD.name}")
 

@@ -1,12 +1,12 @@
 /**
  * The brand tile of the sidebar, the sign-in screens and Settings → General: the organisation's uploaded logo when
- * there is one (kept whole, square or wide), otherwise the KRZ Technologies mark (the "KRZ" wordmark; the "K" alone
- * where the collapsed sidebar leaves only a square).
+ * there is one (kept whole, square or wide, on a white tile since its own background is unknown), otherwise the KRZ
+ * Technologies mark straight on the page in the theme's colours (the "KRZ" wordmark; the "K" alone where the collapsed
+ * sidebar leaves only a square; D-121).
  */
 import type { CSSProperties } from 'react';
-import wordmark from '@/assets/brand/krz-wordmark.svg';
-import kMark from '@/assets/brand/krz-k.svg';
 import { cx } from '@/lib/cx';
+import { KrzK, KrzWordmark } from './KrzLogo';
 import './Sidebar.module.css';
 
 export function BrandMark({
@@ -35,8 +35,8 @@ export function BrandMark({
       role={alt ? 'img' : undefined}
       aria-label={alt || undefined}
     >
-      <img className="krz-word" src={wordmark} alt="" />
-      <img className="krz-k" src={kMark} alt="" />
+      <KrzWordmark className="krz-word" />
+      <KrzK className="krz-k" />
     </div>
   );
 }

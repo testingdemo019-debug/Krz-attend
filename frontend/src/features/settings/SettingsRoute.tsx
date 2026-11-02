@@ -15,6 +15,7 @@ import { SETTINGS_PAGES, settingsPageAllowed } from '@/lib/nav';
 import { useNeedsPermissionText, usePermissionCheck } from '@/lib/permissions';
 import { usePageTitle } from '@/lib/usePageTitle';
 import '@/components/layout/SettingsLayout.module.css';
+import { FormSkeleton } from '@/components/ui/Skeleton';
 
 const BODIES: Readonly<Record<string, LazyExoticComponent<ComponentType>>> = {
   general: lazy(() => import('./GeneralSettings').then(m => ({ default: m.GeneralSettings }))),
@@ -82,7 +83,13 @@ export function SettingsRoute() {
         </nav>
         <div id="set-main" style={{ minWidth: 0 }}>
           {Body && settingsPageAllowed(page, has) ? (
-            <Suspense fallback={null}>
+            <Suspense
+              fallback={
+                <div className="card pad">
+                  <FormSkeleton />
+                </div>
+              }
+            >
               <Body />
             </Suspense>
           ) : (

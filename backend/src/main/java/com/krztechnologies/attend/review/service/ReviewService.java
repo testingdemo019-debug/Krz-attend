@@ -69,7 +69,6 @@ public class ReviewService {
             "LIVENESS", "Liveness alert");
 
     private static final String UNDO_KIND = "review";
-    private static final int NR03_DEFAULT_MINUTES = 30;
     private static final int MAX_OPEN_LISTED = 2_000;
     private static final int MAX_EXPORTED = 50_000;
     /** The punch effects a decision's toast names. */
@@ -281,7 +280,7 @@ public class ReviewService {
     /** The Dashboard's review numbers; "waiting" uses NR-03's threshold, like the queue's waiting filter. */
     @Transactional(readOnly = true)
     public ReviewViews.Glance glance() {
-        int minutes = rules.threshold("NR-03", NR03_DEFAULT_MINUTES);
+        int minutes = rules.reviewWaitMinutes();
         ReviewStore.Glance glance =
                 store.glance(time.startOfDay(time.today()), time.now().minus(Duration.ofMinutes(minutes)));
         return new ReviewViews.Glance(
@@ -502,7 +501,7 @@ public class ReviewService {
     private record Context(ConfidenceBands bands, ActiveThresholds values, boolean showScores, Instant waitingBefore) {}
 
     private Context context() {
-        int minutes = rules.threshold("NR-03", NR03_DEFAULT_MINUTES);
+        int minutes = rules.reviewWaitMinutes();
         ActiveThresholds values = recognition.activeValues();
         return new Context(
                 new ConfidenceBands(values.accept()),

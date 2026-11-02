@@ -23,7 +23,7 @@ import { Button } from '@/components/ui/Button';
 import { Callout } from '@/components/ui/Callout';
 import { Chip } from '@/components/ui/Chip';
 import { KeyValueList } from '@/components/ui/KeyValueList';
-import { SkeletonRows } from '@/components/ui/Skeleton';
+import { FormSkeleton } from '@/components/ui/Skeleton';
 import { fmtDate } from '@/lib/format';
 import { useDraft } from '@/lib/useDraft';
 import { CalibrationTag, SettingsCard } from './SettingsCard';
@@ -41,7 +41,7 @@ const MODEL_ROLES: Readonly<Record<string, string>> = {
   yunet: 'Face detector',
   sface: 'Face embedding',
   yolox: 'Person detection and tracking',
-  osnet: 'Back-view Re-ID',
+  reidentificationnet: 'Back-view Re-ID',
   'minifasnet-v2': 'Liveness',
   'minifasnet-v1se': 'Liveness (second model)',
 };
@@ -60,7 +60,7 @@ export function RecognitionSettings() {
   if (!view.data) {
     return (
       <SettingsCard title={TITLE} sub={SUB}>
-        <SkeletonRows rows={8} columns={2} />
+        <FormSkeleton rows={8} />
       </SettingsCard>
     );
   }

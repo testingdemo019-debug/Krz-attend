@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/Button';
 import { Callout } from '@/components/ui/Callout';
 import { fmtDateTime } from '@/lib/format';
 import { usePageTitle } from '@/lib/usePageTitle';
-import { BrandHeader, SignInFrame } from './SignInFrame';
+import { SignInFrame } from './SignInFrame';
 import '@/components/form/Field.module.css';
 
 export function AccessPage() {
@@ -49,7 +49,6 @@ function Outcome({ me }: { me: Me }) {
       <SignInFrame>
         {branding => (
           <>
-            <BrandHeader branding={branding} />
             <Callout tone="danger" icon="ban" className="mt-16">
               <b id="si-title">Your account has been disabled.</b>
               <br />
@@ -67,7 +66,6 @@ function Outcome({ me }: { me: Me }) {
       <SignInFrame wide>
         {branding => (
           <>
-            <BrandHeader branding={branding} />
             <div className="empty-ic round-ic amber">
               <Icon name="userX" size="lg" />
             </div>
@@ -102,9 +100,8 @@ function NoAccess({ me, signOutButton }: { me: Me; signOutButton: React.ReactNod
   const declined = latest?.status === 'DECLINED' ? latest : null;
   return (
     <SignInFrame wide>
-      {branding => (
+      {() => (
         <>
-          <BrandHeader branding={branding} />
           <div className="empty-ic round-ic red">
             <Icon name="lock" size="lg" />
           </div>

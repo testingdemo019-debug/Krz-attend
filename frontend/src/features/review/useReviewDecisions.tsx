@@ -4,6 +4,7 @@
  * (F10: undo calls the server). A deciding card fades out until the refreshed list no longer has it.
  */
 import { useState } from 'react';
+import { useNavigate } from 'react-router';
 import { ApiError } from '@/api/client';
 import type { EmployeeListItem } from '@/api/employees';
 import {
@@ -14,10 +15,11 @@ import {
   type ReviewApplied,
   type ReviewItem,
 } from '@/api/review';
+import { CropImage } from '@/components/domain/CropImage';
 import { useConfirm } from '@/components/feedback/ConfirmDialog';
 import { toast } from '@/components/feedback/toast';
 import { EmployeePicker } from '@/components/form/EmployeePicker';
-import { EFFECTS, REVIEW_ACTIONS, term, type ReviewAction } from '@/lib/vocabulary';
+import { EFFECTS, REVIEW_ACTIONS, REVIEW_TYPES, term, type ReviewAction } from '@/lib/vocabulary';
 import { fmtTime } from '@/lib/format';
 import { plural } from '@/lib/text';
 import '@/components/form/Field.module.css';
@@ -58,43 +60,111 @@ function body(action: ReviewAction, rest: Partial<Omit<DecisionRequest, 'action'
   };
 }
 
+/** How long a resolved card shows its mark before it leaves (D-121); the last 300 ms are the leave animation. */
+const RESOLVED_MS = 1400;
+
+const without = <T,>(set: ReadonlySet<T>, values: readonly T[]): ReadonlySet<T> => {
+  const next = new Set(set);
+  values.forEach(v => next.delete(v));
+  return next;
+};
+
+/**
+ * The Review Queue's decisions. While a card is being decided (its dialog open, or its request on the way) it is
+ * `active` and shows "Selected"; once decided it shows what was done (`resolved`) for a moment, then leaves (D-121).
+ */
 export function useReviewDecisions() {
-  const decision = useReviewDecision();
-  const bulkDecision = useReviewBulk();
+  const decision = useReviewDecision(RESOLVED_MS);
+  const bulkDecision = useReviewBulk(RESOLVED_MS);
   const undo = useReviewUndo();
   const confirm = useConfirm();
+  const navigate = useNavigate();
+  const [active, setActive] = useState<ReadonlySet<string>>(new Set());
+  const [resolved, setResolved] = useState<ReadonlyMap<string, string>>(new Map());
   const [leaving, setLeaving] = useState<ReadonlySet<string>>(new Set());
   const [assigning, setAssigning] = useState<{ item: ReviewItem; choice: CardChoice } | null>(null);
 
-  const settle = (code: string): void => {
-    setLeaving(current => {
-      const next = new Set(current);
-      next.delete(code);
+  /** The card is acted on: it shows "Selected" and comes into view. */
+  const select = (codes: readonly string[]): void => {
+    setActive(new Set(codes));
+    if (codes.length === 1) {
+      document
+        .querySelector(`[data-review="${codes[0] ?? ''}"]`)
+        ?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }
+  };
+  const release = (codes: readonly string[]): void => {
+    setActive(current => without(current, codes));
+  };
+
+  /** Decided: the cards show what was done, leave, and are gone once the queue is fetched again. */
+  const done = (codes: readonly string[], label: string): void => {
+    setResolved(current => {
+      const next = new Map(current);
+      codes.forEach(code => next.set(code, label));
       return next;
     });
+    window.setTimeout(() => {
+      setLeaving(current => new Set([...current, ...codes]));
+    }, RESOLVED_MS - 300);
+    window.setTimeout(() => {
+      release(codes);
+      setLeaving(current => without(current, codes));
+      setResolved(current => {
+        const next = new Map(current);
+        codes.forEach(code => next.delete(code));
+        return next;
+      });
+    }, RESOLVED_MS + 600);
   };
+
+  /** The decision toast's link to the item in the Resolved tab, where its row is marked. */
+  const view = (code: string) => (
+    <>
+      {' '}
+      <a
+        href={`/review?tab=resolved&resolved=${code}`}
+        onClick={event => {
+          event.preventDefault();
+          void navigate(`/review?tab=resolved&resolved=${code}`);
+        }}
+      >
+        View
+      </a>
+    </>
+  );
 
   /** Sends one decision; `who` names the employee in the toast and in the no-consent warning. */
   const run = (item: ReviewItem, request: DecisionRequest, who: string | null): void => {
-    setLeaving(current => new Set(current).add(item.code));
+    select([item.code]);
     decision.mutate(
       { code: item.code, body: request },
       {
         onSuccess: applied => {
-          toast(`${REVIEW_ACTIONS[request.action]}${who ? ` — ${who}` : ''}${summary(applied)}`, {
-            type: 'success',
-            logged: true,
-            timeout: applied.undoSeconds * 1000,
-            action: {
-              label: 'Undo',
-              run: () => {
-                undo.mutate(applied.undoToken, {
-                  onSuccess: () => toast(`Undone — ${item.code} is back in the queue`, { type: 'info', logged: true }),
-                  onError: error => toast(error.message, { type: 'error' }),
-                });
+          const label = `${REVIEW_ACTIONS[request.action]}${who ? ` — ${who}` : ''}`;
+          done([item.code], label);
+          toast(
+            <>
+              {item.code}: {label}
+              {summary(applied)}
+              {view(item.code)}
+            </>,
+            {
+              type: 'success',
+              logged: true,
+              timeout: applied.undoSeconds * 1000,
+              action: {
+                label: 'Undo',
+                run: () => {
+                  undo.mutate(applied.undoToken, {
+                    onSuccess: () =>
+                      toast(`Undone — ${item.code} is back in the queue`, { type: 'info', logged: true }),
+                    onError: error => toast(error.message, { type: 'error' }),
+                  });
+                },
               },
             },
-          });
+          );
         },
         onError: error => {
           if (error instanceof ApiError && error.code === 'TEMPLATE_NOT_ELIGIBLE' && request.addTemplate && who) {
@@ -103,10 +173,8 @@ export function useReviewDecisions() {
             run(item, { ...request, addTemplate: false }, who);
             return;
           }
+          release([item.code]);
           toast(error.message, { type: 'error' });
-        },
-        onSettled: () => {
-          settle(item.code);
         },
       },
     );
@@ -128,6 +196,7 @@ export function useReviewDecisions() {
       );
     },
     assign(item: ReviewItem, choice: CardChoice): void {
+      select([item.code]);
       setAssigning({ item, choice });
     },
     async notEmployee(item: ReviewItem): Promise<void> {
@@ -135,8 +204,10 @@ export function useReviewDecisions() {
         run(item, body('NOT_EMPLOYEE', { reason: 'Visitor' }), null);
         return;
       }
+      select([item.code]);
       const result = await confirm({
         title: 'Mark as not an employee?',
+        subject: <ReviewSubject item={item} />,
         message:
           'This overrides the suggested match. The crop is kept for the unknown-face retention period, then purged.',
         confirmText: 'Not an employee',
@@ -145,33 +216,43 @@ export function useReviewDecisions() {
         notePlaceholder: 'Required for “Other”',
       });
       if (result) run(item, body('NOT_EMPLOYEE', { reason: result.reason, note: result.note || null }), null);
+      else release([item.code]);
     },
     reject(item: ReviewItem): void {
       run(item, body('REJECT', { reason: 'Bad image' }), null);
     },
     async spoof(item: ReviewItem): Promise<void> {
+      select([item.code]);
       const result = await confirm({
         title: 'Confirm spoof attempt?',
+        subject: <ReviewSubject item={item} />,
         message: 'No punch is created. The evidence is kept with the audit trail and the administrators are alerted.',
         confirmText: 'Confirm spoof attempt',
         danger: true,
         note: 'Note (optional)',
       });
       if (result) run(item, body('SPOOF', { note: result.note || null }), null);
+      else release([item.code]);
     },
     async bulk(op: BulkOp, items: readonly ReviewItem[], onDone: () => void): Promise<void> {
       const label = BULK_LABELS[op];
+      const codes = items.map(i => i.code);
+      select(codes);
       const result = await confirm({
         title: `${label}?`,
-        message: `This applies to ${plural(items.length, 'item')}. You can undo for 10 seconds.`,
+        message: `This applies to ${plural(items.length, 'item')}: ${codes.join(', ')}. You can undo for 10 seconds.`,
         confirmText: label,
       });
-      if (!result) return;
+      if (!result) {
+        release(codes);
+        return;
+      }
       bulkDecision.mutate(
-        { codes: items.map(i => i.code), action: op, employeeId: null, reason: null },
+        { codes, action: op, employeeId: null, reason: null },
         {
           onSuccess: applied => {
             onDone();
+            done(codes, label);
             toast(`${label} — ${plural(items.length, 'item')}`, {
               type: 'success',
               logged: true,
@@ -184,7 +265,10 @@ export function useReviewDecisions() {
               },
             });
           },
-          onError: error => toast(error.message, { type: 'error' }),
+          onError: error => {
+            release(codes);
+            toast(error.message, { type: 'error' });
+          },
         },
       );
     },
@@ -196,6 +280,7 @@ export function useReviewDecisions() {
       item={assigning.item}
       choice={assigning.choice}
       onClose={() => {
+        release([assigning.item.code]);
         setAssigning(null);
       }}
       onAssign={(employee, request) => {
@@ -205,7 +290,31 @@ export function useReviewDecisions() {
     />
   );
 
-  return { actions, leaving, dialogs };
+  return { actions, active, resolved, leaving, dialogs };
+}
+
+/** The item a dialog decides: its best crop, code, kind and who it is (or is suggested to be). */
+function ReviewSubject({ item }: { item: ReviewItem }) {
+  const sighting = item.sightings.find(s => s.code === item.bestSighting) ?? item.sightings[0];
+  const back = item.type === 'REID';
+  const who = item.candidates[0]?.name ?? item.label ?? 'Unknown face';
+  return (
+    <div className="rv-subject">
+      {sighting && (
+        <CropImage
+          crossing={sighting.code}
+          kind={back ? 'body' : 'face'}
+          available={back ? sighting.bodyCrop : sighting.faceCrop}
+          revealable={false}
+        />
+      )}
+      <div>
+        <b className="mono">{item.code}</b>
+        <span className="muted"> · {term(REVIEW_TYPES, item.type)?.short ?? item.typeLabel}</span>
+        <div className="small">{who}</div>
+      </div>
+    </div>
+  );
 }
 
 /** The prototype's review-assign picker: who, the override reason and note, and the template tick. */
@@ -237,9 +346,12 @@ function AssignDialog({
           : 'Assign to employee'
       }
       sub={
-        item.type === 'UNKNOWN'
-          ? 'Every crossing in this cluster goes through the punch rules for the employee you choose (method “Review”).'
-          : 'Overrides the system’s suggestion.'
+        <>
+          <ReviewSubject item={item} />
+          {item.type === 'UNKNOWN'
+            ? 'Every crossing in this cluster goes through the punch rules for the employee you choose (method “Review”).'
+            : 'Overrides the system’s suggestion.'}
+        </>
       }
       onClose={onClose}
       note={e =>

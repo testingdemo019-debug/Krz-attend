@@ -29,6 +29,7 @@ def status(context: Context) -> dict[str, Any]:
         "version": context.settings.app_version,
         "provider": models.provider if models is not None else context.settings.execution_provider,
         "gpu": gpu.info(context.settings.gpu_device),
+        "reid": models is not None and models.reid is not None,
         "cameras": cameras,
         "models": [
             {"name": m.name, "version": m.version, "sha256": m.sha256, "licence": m.licence}

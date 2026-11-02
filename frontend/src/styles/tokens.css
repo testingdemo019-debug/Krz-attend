@@ -24,6 +24,8 @@ html[data-theme="light"]{
   --blue:#1d4ea3; --blue-bg:#e7eefb;
   --scrim: rgba(17,24,39,.42);
   --chart-muted:#c3c8d0; --chart-grid:#e9ecf0;
+  /* The KRZ Technologies mark (D-121). */
+  --brand-navy:#1b1464; --brand-orange:#fbb03b;
 }
 html[data-theme="dark"]{
   color-scheme: dark;
@@ -40,6 +42,8 @@ html[data-theme="dark"]{
   --blue:#8fb3f6; --blue-bg:#1b2944;
   --scrim: rgba(0,0,0,.6);
   --chart-muted:#4a525e; --chart-grid:#252b33;
+  /* The mark's navy "K" disappears on a dark page: a light tint of it instead; the orange stays (D-121). */
+  --brand-navy:#e4e1ff; --brand-orange:#fbb03b;
   --shadow-1: 0 1px 2px rgba(0,0,0,.4);
   --shadow-2: 0 4px 12px rgba(0,0,0,.45);
   --shadow-3: 0 16px 40px rgba(0,0,0,.6);

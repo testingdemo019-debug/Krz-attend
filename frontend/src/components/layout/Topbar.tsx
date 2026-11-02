@@ -38,11 +38,18 @@ export function Topbar({
   const [searching, setSearching] = useState(false);
   return (
     <header className={cx('topbar', searching && 'searching')} id="topbar">
-      <IconButton className="tb-menu" icon="menu" label="Toggle sidebar" onClick={onToggleSidebar} />
+      <IconButton
+        className="tb-menu"
+        icon="menu"
+        label="Toggle sidebar"
+        tooltipPosition="bottom"
+        onClick={onToggleSidebar}
+      />
       <IconButton
         className="tb-search"
         icon="search"
         label="Search"
+        tooltipPosition="bottom"
         onClick={() => {
           setSearching(true);
           requestAnimationFrame(() => searchRef.current?.focus());

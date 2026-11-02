@@ -1,6 +1,7 @@
-/* Sign-in — the prototype's CSS (docs/prototype/index.html), values unchanged. */
-.signin{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;background:radial-gradient(1200px 600px at 20% -10%,var(--accent-weak),transparent),var(--bg)}
-.signin-card{width:min(440px,100%);background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow-3);padding:32px}
+/* Sign-in — two panels (D-121): the brand panel with the camera-scan loop, and the prototype's card and footer. */
+.signin{min-height:100vh;display:grid;grid-template-columns:minmax(0,1.08fr) minmax(0,1fr);background:var(--bg)}
+.signin-main{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:32px 24px;background:radial-gradient(900px 520px at 85% -10%,var(--accent-weak),transparent),var(--bg)}
+.signin-card{width:min(440px,100%);background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow-3);padding:32px;animation:si-rise .45s ease-out both}
 .signin-foot{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;font-size:12px;color:var(--text-3);max-width:440px;text-align:center}
 .signin-foot a{color:var(--text-2)}
 .si-help a{text-decoration:underline}
@@ -10,3 +11,67 @@
 .email-chip:not([disabled]):hover{background:var(--surface-3)}
 .round-ic{width:52px;height:52px;border-radius:50%;display:grid;place-items:center;margin-bottom:12px}
 .round-ic.red{background:var(--red-bg);color:var(--red)} .round-ic.amber{background:var(--amber-bg);color:var(--amber)}
+@keyframes si-rise{from{opacity:0;transform:translateY(12px)}}
+
+/* "or" between the work e-mail and the Microsoft button. */
+.si-or{display:flex;align-items:center;gap:12px;margin:18px 0;color:var(--text-3);font-size:12px}
+.si-or::before,.si-or::after{content:"";flex:1;height:1px;background:var(--border)}
+
+/* Microsoft's sign-in button (its branding guidelines: the four-square logo, "Sign in with Microsoft", light and dark). */
+.ms-btn{--ms-bg:#fff;--ms-fg:#5e5e5e;--ms-border:#8c8c8c;display:flex;align-items:center;justify-content:center;gap:12px;width:100%;height:44px;padding:0 16px;border:1px solid var(--ms-border);border-radius:var(--radius);background:var(--ms-bg);color:var(--ms-fg);font:600 15px "Segoe UI",var(--font);cursor:pointer;transition:filter .12s,box-shadow .12s}
+.ms-btn:hover{filter:brightness(.97);box-shadow:var(--shadow-1)}
+.ms-btn:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.ms-btn svg{width:21px;height:21px;flex:none}
+html[data-theme="dark"] .ms-btn{--ms-bg:#2f2f2f;--ms-fg:#fff;--ms-border:#2f2f2f}
+
+/* The brand panel: always dark, so the mark uses its light "K". */
+.signin-hero{--brand-navy:#e4e1ff;position:relative;overflow:hidden;display:flex;flex-direction:column;justify-content:space-between;gap:28px;padding:40px 48px;color:#fff;background:radial-gradient(520px 360px at 85% 12%,rgba(251,176,59,.18),transparent 70%),radial-gradient(640px 480px at 0% 100%,rgba(107,155,242,.22),transparent 70%),linear-gradient(155deg,#0f0b3d 0%,#1b1464 48%,#22307e 100%)}
+.hero-brand{display:flex;align-items:center;gap:14px}
+.hero-mark{height:34px;width:auto;display:block}
+.hero-name{font-weight:700;font-size:18px;letter-spacing:.2px}
+.hero-org{font-size:12.5px;color:rgba(255,255,255,.68)}
+.hero-copy h2{font-size:26px;line-height:1.2;margin:0 0 8px;color:#fff}
+.hero-copy p{margin:0;max-width:440px;color:rgba(255,255,255,.75);font-size:14px}
+.hero-facts{list-style:none;padding:0;margin:16px 0 0;display:flex;flex-wrap:wrap;gap:8px}
+.hero-facts li{padding:5px 11px;border-radius:999px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.06);font-size:12px;color:rgba(255,255,255,.85)}
+
+/* The scan stage: the camera picture with the face-scan canvas (faceScan.ts) and its captions, and today's list. The
+   captions and the new row follow the loop through the stage's data-phase (ScanAnimation.tsx). */
+.scan-stage{position:relative;display:grid;grid-template-columns:minmax(0,1fr) 224px;gap:16px;align-items:end;max-width:700px;width:100%;margin:0 auto}
+.scan-cam{position:relative;border-radius:18px;border:1px solid rgba(255,255,255,.14);background:radial-gradient(240px 200px at 50% 45%,rgba(90,150,255,.16),transparent 70%),linear-gradient(rgba(255,255,255,.04) 1px,transparent 1px) 0 0/24px 24px,linear-gradient(90deg,rgba(255,255,255,.04) 1px,transparent 1px) 0 0/24px 24px,linear-gradient(180deg,rgba(6,10,40,.55),rgba(6,10,40,.3));box-shadow:0 30px 60px rgba(0,0,0,.35);overflow:hidden}
+.scan-canvas{display:block;width:100%;aspect-ratio:6/5}
+.scan-say{position:absolute;left:50%;bottom:20px;transform:translateX(-50%);font-size:11px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:rgba(170,210,255,.9);white-space:nowrap;transition:opacity .3s;animation:scan-pulse 1.4s ease-in-out infinite}
+.scan-say::after{content:"…"}
+.scan-chip{position:absolute;left:50%;bottom:12px;display:flex;align-items:center;gap:7px;transform:translate(-50%,8px);padding:6px 14px 6px 8px;border-radius:999px;background:rgba(18,48,31,.92);border:1px solid rgba(63,191,120,.6);color:#d8f5e5;font-size:12.5px;white-space:nowrap;opacity:0;transition:opacity .35s,transform .35s}
+.scan-chip b{color:#fff}
+.scan-ok{width:16px;height:16px;flex:none}
+.scan-ok circle{fill:#3fbf78}
+.scan-ok path{stroke:#fff}
+.scan-stage[data-phase="verified"] .scan-say{opacity:0}
+.scan-stage[data-phase="verified"] .scan-chip{opacity:1;transform:translate(-50%,0)}
+.scan-feed{border-radius:14px;border:1px solid rgba(255,255,255,.14);background:rgba(10,8,40,.45);padding:10px;display:flex;flex-direction:column;gap:6px;font-size:12px}
+.scan-feed-head{font-size:11px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:rgba(255,255,255,.6);padding:0 2px 2px}
+.scan-row{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:9px;background:rgba(255,255,255,.06);color:rgba(255,255,255,.9);overflow:hidden}
+.scan-row .grow{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.scan-av{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;background:rgba(107,155,242,.35);font-size:11px;font-weight:700;flex:none}
+.scan-in{font-size:10.5px;font-weight:700;color:#5fd394}
+.scan-at{font-size:11px;color:rgba(255,255,255,.6);font-variant-numeric:tabular-nums}
+.scan-row-new{background:rgba(63,191,120,.18);border:0 solid rgba(63,191,120,.45);opacity:0;max-height:0;padding-top:0;padding-bottom:0;margin-bottom:-6px;transition:opacity .35s,max-height .35s,padding .35s,margin .35s,border-width .35s}
+.scan-stage[data-phase="verified"] .scan-row-new{opacity:1;max-height:40px;padding-top:6px;padding-bottom:6px;margin-bottom:0;border-width:1px}
+@keyframes scan-pulse{50%{opacity:.45}}
+
+/* Reduced motion: the identified frame, still. */
+@media (prefers-reduced-motion:reduce){
+  .signin-card,.scan-say{animation:none}
+  .scan-say,.scan-chip,.scan-row-new{transition:none}
+}
+
+/* Narrow: the brand panel is a band above the card (mark and headline). */
+@media (max-width:960px){
+  .signin{grid-template-columns:minmax(0,1fr)}
+  .signin-hero{padding:20px 24px;gap:10px}
+  .signin-hero .scan-stage,.hero-copy p,.hero-facts{display:none}
+  .hero-copy h2{font-size:18px;margin:0}
+  .signin-main{justify-content:flex-start;padding:24px 16px}
+}
+@media (max-width:1180px) and (min-width:961px){.scan-stage{grid-template-columns:minmax(0,1fr)}.scan-feed{display:none}}

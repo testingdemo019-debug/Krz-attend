@@ -2,13 +2,14 @@
 
 Per processed frame: people (YOLOX) whose anchor is inside the zone -> ByteTrack IDs -> per track the tripwire,
 face checks (YuNet on the head region at full resolution, quality gate, liveness, SFace, gallery vote) and body
-embeddings (OSNet) -> a confirmed crossing gets its R14 decision, crops and message, then waits out the U-turn window
-before it is sent. A camera counted by doorway zone (D-120, ``tracking.doorway``) has no tripwire, confirmation or
-U-turn window: each track's walk is judged shortly after the person has gone, and a walk that was a crossing is sent
-at once (door -> door is no crossing, so there is no U-turn to wait for). Direction modes are not applied here: every
-crossing is sent and the backend applies the camera's mode, so the rule lives in one place. During a calibration run
-crossings go to the run instead of the stream. During an enrolment capture (``pipeline.enrol_capture``) the person in
-view gives face samples to it, and their crossings are marked so the backend records them without counting them.
+embeddings (ReIdentificationNet) -> a confirmed crossing gets its R14 decision, crops and message, then waits out
+the U-turn window before it is sent. A camera counted by doorway zone (D-120, ``tracking.doorway``) has no tripwire,
+confirmation or U-turn window: each track's walk is judged shortly after the person has gone, and a walk that was a
+crossing is sent at once (door -> door is no crossing, so there is no U-turn to wait for). Direction modes are not
+applied here: every crossing is sent and the backend applies the camera's mode, so the rule lives in one place. During
+a calibration run crossings go to the run instead of the stream. During an enrolment capture
+(``pipeline.enrol_capture``) the person in view gives face samples to it, and their crossings are marked so the backend
+records them without counting them.
 
 ``process`` does the work of one frame and returns what it emitted, so tests and replay_video.py drive it directly;
 ``run`` analyses at most WORKER_MAX_FPS pictures a second of a live source, counted on their arrival times
@@ -266,7 +267,8 @@ class CameraPipeline:
             return
         state.last_body_check = self._frame_index
         crop = crop_files.body_crop(image, state.box)
-        embedding = self._models.reid.embed([crop])[0]
+        reid = self._models.reid
+        embedding = reid.embed([crop])[0] if reid is not None else None
         face_in_crop = None
         if state.last_face is not None:
             fx, fy, fw, fh = state.last_face.box
@@ -328,7 +330,7 @@ class CameraPipeline:
         bodies = (
             np.stack([embedding for _, embedding in state.bodies])
             if state.bodies
-            else np.zeros((0, 512), dtype=np.float32)
+            else np.zeros((0, 0), dtype=np.float32)
         )
         if needs_reid(evidence, thresholds) and ctx.reid is not None:
             reid = ctx.reid

@@ -15,6 +15,7 @@ import { FaceStatusChip } from '@/components/domain/Chips';
 import { EmployeeIdText, PersonCell } from '@/components/domain/PersonCell';
 import { ErrorState } from '@/components/feedback/EmptyState';
 import { Card } from '@/components/layout/Card';
+import { ReportSkeleton } from '@/components/ui/Skeleton';
 import { PageHead } from '@/components/layout/PageHead';
 import { ButtonLink } from '@/components/ui/Button';
 import { exportFileName } from '@/lib/format';
@@ -46,18 +47,18 @@ export function CoveragePage() {
       />
       {coverage.isError ? (
         <ErrorState what="the coverage" onRetry={() => void coverage.refetch()} />
+      ) : coverage.data ? (
+        <>
+          <Kpis coverage={coverage.data} />
+          <Card title="By department" className="mb-16" bodyClassName="chart" actions={<Legend entries={legend()} />}>
+            <StackedBarChart
+              items={coverage.data.departments.map(d => ({ label: d.name, values: d.groups }))}
+              segments={SEGMENTS}
+            />
+          </Card>
+        </>
       ) : (
-        coverage.data && (
-          <>
-            <Kpis coverage={coverage.data} />
-            <Card title="By department" className="mb-16" bodyClassName="chart" actions={<Legend entries={legend()} />}>
-              <StackedBarChart
-                items={coverage.data.departments.map(d => ({ label: d.name, values: d.groups }))}
-                segments={SEGMENTS}
-              />
-            </Card>
-          </>
-        )
+        <ReportSkeleton kpis={4} />
       )}
       <UncoveredTable />
     </>

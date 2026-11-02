@@ -14,7 +14,7 @@
         "candidates": "[{\"employee_id\":\"0b6e3c1a-5d2f-4e8b-9a7c-1d2e3f4a5b6c\",\"score\":0.8123}]",
         "unknown_cluster": "", "face_crop": "2026/10/12/EV-face-01928a5e.enc", "face_crop_blur": "2026/10/12/EV-face-01928a5e.blur.enc",
         "body_crop": "", "body_crop_blur": "", "track_id": "17",
-        "model_version": "yunet-2023mar+sface-2021dec+osnet-x1_0", "worker_id": "worker-1", "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
+        "model_version": "yunet-2023mar+sface-2021dec+reidentificationnet-deployable_v1.2", "worker_id": "worker-1", "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
         "enrolment_capture": "false", "direction_unsure": "false"
       },
       "expect": { "identity": true, "method": "FACE", "decision": "AUTO", "reviewType": null }

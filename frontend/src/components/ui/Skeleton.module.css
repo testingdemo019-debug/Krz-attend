@@ -4,3 +4,24 @@
 html[data-theme="dark"] .skeleton::after{background:linear-gradient(90deg,transparent,rgba(255,255,255,.06),transparent)}
 @keyframes shimmer{100%{transform:translateX(100%)}}
 .sk-line{height:12px;margin:6px 0}
+/* Page-shaped placeholders (D-121): shown after 150 ms, the shapes of what they stand for. */
+.sk-page{animation:sk-in .2s ease .15s both}
+@keyframes sk-in{from{opacity:0}}
+.sk-circle{border-radius:50%;flex:none}
+.sk-end{margin-left:auto}
+.sk-value{height:26px;margin:10px 0 8px;border-radius:6px}
+.sk-kpi{cursor:default;position:relative}
+.sk-kpi-ic{position:absolute;top:12px;right:12px;width:26px;height:26px;border-radius:7px}
+.sk-chart{display:flex;align-items:flex-end;gap:8px;height:200px;padding-top:12px}
+.sk-bar{flex:1;border-radius:4px 4px 0 0}
+.sk-list-row{padding:8px 0}
+.sk-tile{overflow:hidden}
+.sk-media{aspect-ratio:16/9;width:100%;border-radius:0}
+.sk-tile-foot{padding:12px 14px}
+.sk-pill{width:64px;height:20px;border-radius:999px}
+.sk-crop{width:100%;aspect-ratio:1;border-radius:10px}
+.sk-btn{height:32px;border-radius:8px}
+.sk-tabs{margin:16px 0}
+.sk-kv{padding:6px 0}
+.sk-field{height:36px;border-radius:8px;margin-top:6px}
+@media (prefers-reduced-motion:reduce){.skeleton::after,.sk-page{animation:none}}

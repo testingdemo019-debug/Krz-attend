@@ -22,6 +22,7 @@ import { Badge } from '@/components/ui/Badge';
 import { ButtonLink } from '@/components/ui/Button';
 import { Chip, type ChipTone } from '@/components/ui/Chip';
 import { LivePill } from '@/components/ui/LivePill';
+import { DashboardSkeleton } from '@/components/ui/Skeleton';
 import { fmtDay, fmtTime, greeting, hourLabel, relTime, todayDay, zonedParts, zoneLabel } from '@/lib/format';
 import { readOverlayPrefs } from '@/lib/overlays';
 import { useMeUser, usePermissionCheck } from '@/lib/permissions';
@@ -76,8 +77,10 @@ export function DashboardPage() {
       <div id="dash-body">
         {dashboard.isError ? (
           <ErrorState what="the dashboard" onRetry={() => void dashboard.refetch()} />
+        ) : dashboard.data ? (
+          <Body data={dashboard.data} now={now} />
         ) : (
-          dashboard.data && <Body data={dashboard.data} now={now} />
+          <DashboardSkeleton />
         )}
       </div>
     </>

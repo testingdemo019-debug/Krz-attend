@@ -16,7 +16,7 @@ SELECT attend.next_code('TP-', 'attend.seq_threshold_profile_code', 1),
           "qualityMin": 50,
           "recheckGrow": 20,
           "reidOn": true,
-          "reidThreshold": 0.70
+          "reidThreshold": 0.75
         }'::jsonb,
        'Initial defaults for SFace (uncalibrated)',
        'System',

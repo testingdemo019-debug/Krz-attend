@@ -24,7 +24,7 @@ import { EmployeePicker } from '@/components/form/EmployeePicker';
 import { ScrollArea } from '@/components/layout/ScrollArea';
 import { Button } from '@/components/ui/Button';
 import { Chip } from '@/components/ui/Chip';
-import { SkeletonRows } from '@/components/ui/Skeleton';
+import { FormSkeleton } from '@/components/ui/Skeleton';
 import { fmtDate, todayDay } from '@/lib/format';
 import { useDraft } from '@/lib/useDraft';
 import { PRIVACY_REQUEST_STATUS, PRIVACY_REQUEST_TYPES, term } from '@/lib/vocabulary';
@@ -42,7 +42,7 @@ export function PrivacySettings() {
   if (!privacy.data) {
     return (
       <SettingsCard title={TITLE} sub={SUB}>
-        <SkeletonRows rows={6} columns={2} />
+        <FormSkeleton rows={6} />
       </SettingsCard>
     );
   }

@@ -7,7 +7,7 @@ import './Button.module.css';
 
 interface IconButtonLook {
   icon: IconName;
-  /** Required: icon-only buttons are named for screen readers (F6.11). */
+  /** Required: icon-only buttons are named for screen readers (F6.11), and show it as their tooltip (D-121). */
   label: string;
   size?: 'sm' | undefined;
   iconSize?: 'sm' | undefined;
@@ -43,7 +43,7 @@ export function IconButton({
       type={type}
       className={classes({ icon, label, size, bordered, active, className })}
       aria-label={label}
-      {...tip(tooltip, tooltipPosition)}
+      {...tip(tooltip ?? label, tooltipPosition)}
       {...rest}
     >
       <Icon name={icon} size={iconSize} />
@@ -69,7 +69,7 @@ export function IconLink({
     <Link
       className={classes({ icon, label, size, bordered, active, className })}
       aria-label={label}
-      {...tip(tooltip, tooltipPosition)}
+      {...tip(tooltip ?? label, tooltipPosition)}
       {...rest}
     >
       <Icon name={icon} size={iconSize} />

@@ -23,6 +23,7 @@ import { Button, ButtonLink } from '@/components/ui/Button';
 import { IconButton } from '@/components/ui/IconButton';
 import { LivePill } from '@/components/ui/LivePill';
 import { MenuItem, MenuLabel, MenuSeparator, Popover } from '@/components/ui/Popover';
+import { CameraTilesSkeleton } from '@/components/ui/Skeleton';
 import { cx } from '@/lib/cx';
 import { dayOf, zonedParts } from '@/lib/format';
 import { containRect, OVERLAY_OPTIONS, readOverlayPrefs, writeOverlayPrefs, type OverlayOptions } from '@/lib/overlays';
@@ -350,6 +351,8 @@ export function LiveViewPage() {
       />
       {cameras.isError ? (
         <ErrorState what="the cameras" onRetry={() => void cameras.refetch()} />
+      ) : cameras.isPending ? (
+        <CameraTilesSkeleton />
       ) : (
         <div className={single ? 'focus-layout' : undefined}>
           <div>

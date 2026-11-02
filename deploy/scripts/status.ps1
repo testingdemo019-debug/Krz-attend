@@ -30,6 +30,7 @@ $rows | Format-Table -AutoSize | Out-String -Width 120
 try {
     $health = Invoke-RestMethod -Uri 'http://127.0.0.1:8090/health' -TimeoutSec 5
     "Worker: $($health.status) on $($health.provider)"
+    if ($health.status -ne 'starting') { "  Back-view Re-ID: $(if ($health.reid) { 'on (TensorRT)' } else { 'OFF - see data\logs\worker.log; an OUT without a face goes to review' })" }
     foreach ($camera in @($health.cameras)) { "  Camera $($camera.code): $($camera.status), $($camera.fps) frames a second" }
 } catch {
     'Worker: no answer on http://127.0.0.1:8090/health'

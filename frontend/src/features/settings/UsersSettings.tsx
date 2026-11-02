@@ -37,7 +37,7 @@ import { Icon } from '@/components/icons/Icon';
 import { Button } from '@/components/ui/Button';
 import { Callout } from '@/components/ui/Callout';
 import { Chip } from '@/components/ui/Chip';
-import { SkeletonRows } from '@/components/ui/Skeleton';
+import { FormSkeleton, SkeletonRows } from '@/components/ui/Skeleton';
 import { Tabs } from '@/components/ui/Tabs';
 import { exportFileName, fmtDate, fmtDateTime } from '@/lib/format';
 import { navigationPreview } from '@/lib/nav';
@@ -395,7 +395,7 @@ function RolesGrid({ roles, onEdit }: { roles: readonly RoleView[] | undefined; 
   const catalogue = usePermissionCatalogue(true).data;
   const confirm = useConfirm();
   const remove = useDeleteRole();
-  if (!roles) return <SkeletonRows rows={4} columns={2} />;
+  if (!roles) return <FormSkeleton rows={4} />;
   const total = catalogue?.length ?? 0;
   const deleteRole = async (r: RoleView) => {
     const ok = await confirm({

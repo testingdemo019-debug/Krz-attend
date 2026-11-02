@@ -12388,6 +12388,10 @@
           "punchRules" : {
             "$ref" : "#/components/schemas/MeController.PunchRules"
           },
+          "reviewWaitMinutes" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
           "timeFormat" : {
             "type" : "string"
           },
@@ -12399,7 +12403,7 @@
             "format" : "int32"
           }
         },
-        "required" : [ "appVersion", "dateFormat", "employeeIdPattern", "features", "idleTimeoutMin", "logoUrl", "orgName", "punchRules", "timeFormat", "timezone", "unknownFaceHours" ]
+        "required" : [ "appVersion", "dateFormat", "employeeIdPattern", "features", "idleTimeoutMin", "logoUrl", "orgName", "punchRules", "reviewWaitMinutes", "timeFormat", "timezone", "unknownFaceHours" ]
       },
       "MeController.PunchRules" : {
         "type" : "object",

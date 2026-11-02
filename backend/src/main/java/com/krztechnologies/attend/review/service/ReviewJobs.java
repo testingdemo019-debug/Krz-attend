@@ -17,8 +17,6 @@ import org.springframework.transaction.support.TransactionTemplate;
 @Component
 public class ReviewJobs {
 
-    private static final int NR03_DEFAULT_MINUTES = 30;
-
     private final ReviewStore store;
     private final NotificationService notifications;
     private final RuleSettings rules;
@@ -41,7 +39,7 @@ public class ReviewJobs {
     @Scheduled(fixedDelay = 60_000, initialDelay = 45_000)
     @SchedulerLock(name = "review-waiting", lockAtMostFor = "PT5M")
     public void notifyWaiting() {
-        int minutes = rules.threshold("NR-03", NR03_DEFAULT_MINUTES);
+        int minutes = rules.reviewWaitMinutes();
         Instant now = time.now();
         for (ReviewStore.Item item : store.waitingSince(now.minus(Duration.ofMinutes(minutes)))) {
             transactions.executeWithoutResult(status -> {

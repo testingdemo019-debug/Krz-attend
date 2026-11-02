@@ -1,7 +1,9 @@
 # Starts the whole KRZ Attend stack on a Windows machine (the host setup used for testing, before the full Docker
 # deployment of Phase 6): Docker Desktop, then Redis and the media relay (containers), then the backend, the worker
 # and the web app as hidden background processes with their output in data\logs. A part that already answers is left
-# alone. With --watch the script keeps running and starts again any part that stops answering (the scheduled task
+# alone. Before the worker and the web app start, their packages are brought up to date when their list changed and
+# the worker's models are checked and downloaded, so a git pull followed by this script is all an update needs. With
+# --watch the script keeps running and starts again any part that stops answering (the scheduled task
 # from install-startup-task.ps1 runs it that way).
 # Usage: powershell -ExecutionPolicy Bypass -File deploy\scripts\start-all.ps1 [--watch] [--no-web] [--help]
 param([Parameter(ValueFromRemainingArguments = $true)][string[]]$CliArgs)
@@ -14,7 +16,8 @@ if ($opts.ContainsKey('help')) {
 start-all - start Docker Desktop, Redis, the media relay, the backend, the worker and the web app.
   --watch    keep running: every minute, start again any part that stopped answering
   --no-web   do not start the web app (npm run dev)
-Logs: data\logs\backend.log, worker.log, web.log, start-all.log. Stop everything with stop-all.ps1.
+Logs: data\logs\backend.log, worker.log, web.log, start-all.log, and worker-setup.log and web-setup.log for updates.
+Stop everything with stop-all.ps1.
 '@
     exit 0
 }
@@ -92,14 +95,38 @@ function Find-JavaHome {
     return $jdk.FullName
 }
 
-# Runs a command line hidden through cmd.exe, appending its output to data\logs\<name>.log; the PID goes to data\run.
-function Start-Hidden([string]$Name, [string]$WorkDir, [string]$CommandLine) {
+# The arguments for cmd.exe to run a command line, appending its output to data\logs\<name>.log.
+function Get-LoggedArguments([string]$Name, [string]$CommandLine) {
     $log = Join-Path $logs "$Name.log"
     Add-Content -LiteralPath $log -Value ('==== {0:yyyy-MM-dd HH:mm:ss} start-all ====' -f (Get-Date)) -Encoding ascii
-    $arguments = '/d /s /c "' + $CommandLine + ' >> "' + $log + '" 2>&1"'
-    $process = Start-Process -FilePath 'cmd.exe' -ArgumentList $arguments -WorkingDirectory $WorkDir -WindowStyle Hidden -PassThru
+    return '/d /s /c "' + $CommandLine + ' >> "' + $log + '" 2>&1"'
+}
+
+# Runs a command line hidden in the background; the PID goes to data\run.
+function Start-Hidden([string]$Name, [string]$WorkDir, [string]$CommandLine) {
+    $process = Start-Process -FilePath 'cmd.exe' -ArgumentList (Get-LoggedArguments $Name $CommandLine) -WorkingDirectory $WorkDir -WindowStyle Hidden -PassThru
     Set-Content -LiteralPath (Join-Path $run "$Name.pid") -Value $process.Id -Encoding ascii
-    Write-Step "Started $Name (log: $log)."
+    Write-Step "Started $Name (log: data\logs\$Name.log)."
+}
+
+# Runs a command line hidden and waits for it; true when it succeeded.
+function Invoke-Hidden([string]$Name, [string]$WorkDir, [string]$CommandLine) {
+    $process = Start-Process -FilePath 'cmd.exe' -ArgumentList (Get-LoggedArguments $Name $CommandLine) -WorkingDirectory $WorkDir -WindowStyle Hidden -PassThru -Wait
+    return ($process.ExitCode -eq 0)
+}
+
+# Installs a part's packages when their list changed since the last success (its hash is kept in data\run). A failure,
+# such as no internet, is reported and tried again at the next start; the part starts with what it has.
+function Update-Packages([string]$Name, [string]$ListFile, [string]$WorkDir, [string]$CommandLine, [string]$What) {
+    $stamp = Join-Path $run "$Name.stamp"
+    $hash = (Get-FileHash -LiteralPath $ListFile -Algorithm SHA256).Hash
+    if ((Test-Path -LiteralPath $stamp) -and ((Get-Content -LiteralPath $stamp -Raw).Trim() -eq $hash)) { return }
+    Write-Step "$What (log: data\logs\$Name.log)."
+    if (Invoke-Hidden $Name $WorkDir $CommandLine) {
+        Set-Content -LiteralPath $stamp -Value $hash -Encoding ascii
+    } else {
+        Write-Step "$What failed; see the log. It is tried again at the next start."
+    }
 }
 
 function Start-Backend {
@@ -110,14 +137,24 @@ function Start-Backend {
 }
 
 function Start-Worker {
-    $python = Join-Path $root 'worker\.venv\Scripts\python.exe'
+    $worker = Join-Path $root 'worker'
+    $python = Join-Path $worker '.venv\Scripts\python.exe'
     if (-not (Test-Path -LiteralPath $python)) { throw 'The worker environment is missing: see README.md (worker setup).' }
-    Start-Hidden 'worker' (Join-Path $root 'worker') ('"' + $python + '" -m krz_worker --host-dev')
+    # A machine set up with the cpu extra stays on it. NVIDIA keeps the TensorRT wheels on its own index.
+    $extra = if (Test-Path -Path (Join-Path $worker '.venv\Lib\site-packages\onnxruntime_gpu-*')) { 'gpu' } else { 'cpu' }
+    Update-Packages 'worker-setup' (Join-Path $worker 'pyproject.toml') $worker ('"' + $python + '" -m pip install --progress-bar off -e ".[' + $extra + ']" --extra-index-url https://pypi.nvidia.com') 'Updating the worker packages (about 2 GB the first time TensorRT is needed)'
+    $models = Join-Path $dataDir 'models'
+    if (-not (Invoke-Hidden 'worker-setup' $worker ('"' + $python + '" scripts\download_models.py --models-dir "' + $models + '"'))) {
+        Write-Step 'Checking the worker models failed; see data\logs\worker-setup.log. The worker does not start on a missing model.'
+    }
+    Start-Hidden 'worker' $worker ('"' + $python + '" -m krz_worker --host-dev')
 }
 
 function Start-Web {
-    if (-not (Test-Path -LiteralPath (Join-Path $root 'frontend\node_modules'))) { throw 'Run npm ci in frontend first: see README.md.' }
-    Start-Hidden 'web' (Join-Path $root 'frontend') 'npm.cmd run dev'
+    $web = Join-Path $root 'frontend'
+    Update-Packages 'web-setup' (Join-Path $web 'package-lock.json') $web 'npm.cmd ci' 'Updating the web app packages'
+    if (-not (Test-Path -LiteralPath (Join-Path $web 'node_modules'))) { throw 'The web app packages are missing: see data\logs\web-setup.log and README.md.' }
+    Start-Hidden 'web' $web 'npm.cmd run dev'
 }
 
 # Each part: its port, how long its first start may take, and how to start it. The order matters: the backend and

@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/Button';
 import { Callout } from '@/components/ui/Callout';
 import { Chip } from '@/components/ui/Chip';
 import { KeyValueList } from '@/components/ui/KeyValueList';
-import { SkeletonRows } from '@/components/ui/Skeleton';
+import { FormSkeleton } from '@/components/ui/Skeleton';
 import { copyText } from '@/lib/clipboard';
 import { fmtDate, fmtDateTime } from '@/lib/format';
 import { plural } from '@/lib/text';
@@ -60,7 +60,7 @@ export function SignInSettings() {
   if (!signIn.data) {
     return (
       <SettingsCard title={TITLE} sub={SUB}>
-        <SkeletonRows rows={6} columns={2} />
+        <FormSkeleton rows={6} />
       </SettingsCard>
     );
   }

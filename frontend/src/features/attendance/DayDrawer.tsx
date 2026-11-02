@@ -19,7 +19,7 @@ import { ErrorState } from '@/components/feedback/EmptyState';
 import { Button, ButtonLink } from '@/components/ui/Button';
 import { Callout } from '@/components/ui/Callout';
 import { KeyValueList } from '@/components/ui/KeyValueList';
-import { SkeletonRows } from '@/components/ui/Skeleton';
+import { DrawerSkeleton } from '@/components/ui/Skeleton';
 import { Stat, StatStrip } from '@/components/ui/StatStrip';
 import { cx } from '@/lib/cx';
 import { DASH, fmtDate, fmtDay, fmtDuration, fmtTime, toMillis } from '@/lib/format';
@@ -299,7 +299,7 @@ export function DayDrawer({
           }}
         />
       ) : (
-        <SkeletonRows rows={8} columns={3} />
+        <DrawerSkeleton rows={8} />
       )}
     </Drawer>
   );

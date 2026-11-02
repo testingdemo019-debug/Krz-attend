@@ -17,6 +17,15 @@ public class RuleSettings {
         this.jdbc = jdbc;
     }
 
+    /**
+     * NR-03's threshold: how many minutes an open review item may wait before it counts as waiting (the notification,
+     * the Review Queue's "Waiting over … min" switch and the Dashboard).
+     */
+    @Transactional(readOnly = true)
+    public int reviewWaitMinutes() {
+        return threshold("NR-03", 30);
+    }
+
     /** The rule's threshold, or {@code fallback} when it has none. */
     @Transactional(readOnly = true)
     public int threshold(String ruleCode, int fallback) {

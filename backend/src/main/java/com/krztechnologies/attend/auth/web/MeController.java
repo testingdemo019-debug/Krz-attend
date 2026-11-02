@@ -11,6 +11,7 @@ import com.krztechnologies.attend.common.security.CurrentUser;
 import com.krztechnologies.attend.common.security.PublicEndpoint;
 import com.krztechnologies.attend.common.security.SignedIn;
 import com.krztechnologies.attend.common.settings.SettingsService;
+import com.krztechnologies.attend.notification.service.RuleSettings;
 import com.krztechnologies.attend.system.service.LogoService;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.servlet.http.HttpSession;
@@ -38,6 +39,7 @@ public class MeController {
     private final FeatureFlags features;
     private final AppProperties app;
     private final LogoService logo;
+    private final RuleSettings notificationRules;
     private final EntraProperties entra;
 
     public MeController(
@@ -48,6 +50,7 @@ public class MeController {
             FeatureFlags features,
             AppProperties app,
             LogoService logo,
+            RuleSettings notificationRules,
             EntraProperties entra) {
         this.me = me;
         this.requests = requests;
@@ -56,6 +59,7 @@ public class MeController {
         this.features = features;
         this.app = app;
         this.logo = logo;
+        this.notificationRules = notificationRules;
         this.entra = entra;
     }
 
@@ -74,6 +78,7 @@ public class MeController {
     /**
      * @param logoUrl null until a logo is uploaded (the UI then shows the "KRZ" text mark)
      * @param unknownFaceHours how long crops of unknown faces are kept (privacy.unknownHours; the Review Queue's note)
+     * @param reviewWaitMinutes when an open review item counts as waiting (NR-03; the Review Queue's switch)
      * @param punchRules the rule values the Events page's help names
      * @param employeeIdPattern the HRMS Employee ID format (general.employeeIdPattern; the employment editor's check)
      */
@@ -87,6 +92,7 @@ public class MeController {
             Features features,
             int idleTimeoutMin,
             int unknownFaceHours,
+            int reviewWaitMinutes,
             PunchRules punchRules,
             String employeeIdPattern) {}
 
@@ -144,6 +150,7 @@ public class MeController {
                 new Features(features.mailEnabled(), features.pushEnabled(), features.hrmsEnabled()),
                 settings.signIn().idleTimeoutMin(),
                 settings.privacy().unknownHours(),
+                notificationRules.reviewWaitMinutes(),
                 new PunchRules(
                         rules.duplicateMinutes(),
                         rules.turnedBackSeconds(),

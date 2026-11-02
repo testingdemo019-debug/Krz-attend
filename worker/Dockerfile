@@ -3,8 +3,9 @@
 #   docker build -f worker/Dockerfile -t krz-attend-worker:<VERSION> .                                  GPU
 #   docker build -f worker/Dockerfile --build-arg RUNTIME=cpu -t krz-attend-worker:<VERSION>-cpu .      CPU
 # GPU: onnxruntime-gpu with CUDA 13 and cuDNN 9 as NVIDIA's pip wheels, ONNX Runtime's documented pip install
-# (DECISIONS D-071); the host needs NVIDIA driver >= 580 and the NVIDIA Container Toolkit (or Docker Desktop with
-# WSL2 GPU support). CPU: onnxruntime, for development machines without a GPU (deploy/docker-compose.cpu.yml).
+# (DECISIONS D-071), and TensorRT from NVIDIA's index for the Re-ID model (D-124); the host needs NVIDIA driver >= 580 and the NVIDIA Container Toolkit (or Docker Desktop with
+# WSL2 GPU support). CPU: onnxruntime, for development machines without a GPU (deploy/docker-compose.cpu.yml), where
+# back-view Re-ID is off: its model is licensed for NVIDIA GPUs only.
 # The models are not in the image: data/models is mounted read-only at /models and checked against models.json at
 # start. Tests and lint run on the host before the build (worker/tests, ruff, mypy, pip-audit).
 
@@ -21,7 +22,8 @@ RUN --mount=type=cache,target=/root/.cache/pip \
       *) echo "RUNTIME must be gpu or cpu, not '$RUNTIME'" >&2; exit 1 ;; \
     esac; \
     python -m venv /opt/venv; \
-    /opt/venv/bin/pip install --require-hashes --no-deps --only-binary=:all: -r "$lock"; \
+    /opt/venv/bin/pip install --extra-index-url https://pypi.nvidia.com \
+      --require-hashes --no-deps --only-binary=:all: -r "$lock"; \
     /opt/venv/bin/pip uninstall --yes pip setuptools
 COPY worker/src/ /app/src/
 RUN /opt/venv/bin/python -m compileall -q /app/src

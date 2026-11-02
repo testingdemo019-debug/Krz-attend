@@ -13,7 +13,7 @@ import { Button, DownloadButton } from '@/components/ui/Button';
 import { IconButton } from '@/components/ui/IconButton';
 import { MenuItem, MenuLabel, MenuSeparator, Popover } from '@/components/ui/Popover';
 import { ScrollArea } from '@/components/layout/ScrollArea';
-import { SkeletonRows } from '@/components/ui/Skeleton';
+import { TableSkeleton } from '@/components/ui/Skeleton';
 import { toggleCompactRows, useCompactRows } from '@/lib/compact';
 import { cx } from '@/lib/cx';
 import { addDays, fmtDateShort, todayDay } from '@/lib/format';
@@ -119,6 +119,7 @@ export function DataTable<T>({
   onRow,
   footNote,
   bulkActions,
+  marked,
 }: {
   /** Names the column preference in storage. */
   id: string;
@@ -138,7 +139,18 @@ export function DataTable<T>({
   footNote?: string;
   /** Rows can be selected (a checkbox column) for these actions. */
   bulkActions?: readonly BulkAction[];
+  /** A row to point out (e.g. the review item just resolved): marked, and scrolled into view once. */
+  marked?: string | null;
 }) {
+  // The marked row comes into view once, when it is first shown.
+  const shownMark = useRef<string | null>(null);
+  useEffect(() => {
+    if (!marked || shownMark.current === marked) return;
+    const row = document.querySelector('table.dt tbody tr.marked');
+    if (!row) return;
+    shownMark.current = marked;
+    row.scrollIntoView({ block: 'center' });
+  });
   const { state } = control;
   const can = usePermissionCheck();
   const needs = useNeedsPermissionText();
@@ -192,7 +204,7 @@ export function DataTable<T>({
       <div className="dt-bodywrap">
         {result.isPending ? (
           <div className="dt-wrap">
-            <SkeletonRows rows={8} columns={Math.min(6, columns.length)} />
+            <TableSkeleton columns={visible} />
           </div>
         ) : result.isError ? (
           <ErrorState
@@ -313,7 +325,7 @@ export function DataTable<T>({
                       // The prototype's t-row: the whole row opens the detail; buttons and links in it keep their own.
                       <tr
                         key={key}
-                        className={cx('clickable', selected.has(key) && 'selected')}
+                        className={cx('clickable', selected.has(key) && 'selected', key === marked && 'marked')}
                         tabIndex={0}
                         onClick={event => {
                           if (!(event.target as Element).closest('button,a,input,label,select')) onRow(row);
@@ -325,7 +337,7 @@ export function DataTable<T>({
                         {cells}
                       </tr>
                     ) : (
-                      <tr key={key} className={cx(selected.has(key) && 'selected')}>
+                      <tr key={key} className={cx(selected.has(key) && 'selected', key === marked && 'marked')}>
                         {cells}
                       </tr>
                     );

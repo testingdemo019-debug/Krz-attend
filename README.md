@@ -45,7 +45,7 @@ It asks for the `postgres` password at a hidden prompt and writes the applicatio
 ```powershell
 cd worker
 py -3.11 -m venv .venv
-.\.venv\Scripts\python -m pip install -e ".[gpu]"
+.\.venv\Scripts\python -m pip install -e ".[gpu]" --extra-index-url https://pypi.nvidia.com
 .\.venv\Scripts\python scripts\download_models.py --models-dir ..\data\models
 cd ..\frontend
 npm ci
@@ -53,6 +53,13 @@ cd ..
 ```
 The model download builds two models in a temporary environment (a few GB, deleted afterwards); copying another
 machine's `data\models` folder instead is quicker.
+
+The back-view Re-ID model is NVIDIA ReIdentificationNet, downloaded from NVIDIA NGC, and it runs on NVIDIA TensorRT
+(about 2 GB, from NVIDIA's package index). Installing them accepts NVIDIA's licences for your organisation: the
+[Deep Learning Models License Agreement](https://developer.download.nvidia.com/licenses/tao_toolkit_21-08_models_eula.pdf)
+allows use inside this application on machines with an NVIDIA GPU, and not handing the model out on its own. On a
+machine without TensorRT the worker still runs, with back-view Re-ID off: an OUT without a face goes to review
+(`deploy\scripts\status.ps1` shows which).
 
 ## 6. Run everything
 ```powershell
@@ -80,12 +87,19 @@ in). Remove the task with `install-startup-task.ps1 --remove`; stop it for now w
 
 ## 8. Update to the newest code
 ```powershell
+Stop-ScheduledTask -TaskName "KRZ Attend"
 powershell -ExecutionPolicy Bypass -File deploy\scripts\stop-all.ps1
 git pull
 powershell -ExecutionPolicy Bypass -File deploy\scripts\start-all.ps1
 ```
-After an update that changes `worker\pyproject.toml` or `frontend\package.json`, run the matching install line of step
-5 again first.
+`start-all` does the rest: when the worker's or the web app's packages changed it installs them, it downloads any new
+model and removes one no longer used, and the backend updates the database as it starts. Watch it in
+`data\logs\start-all.log`, `worker-setup.log` and `web-setup.log`; a large download can take a while, and the first
+worker start after a new model takes about a minute more. If the internet is down the worker and the web app start with
+what they have, and it is tried again at the next start.
+
+The first line is only for a machine with the task of step 7; there, end with `Start-ScheduledTask -TaskName "KRZ Attend"`
+instead of the last line, so it keeps watching. Check the result with `deploy\scripts\status.ps1`.
 
 ## 9. E-mail
 - **Who receives it:** each notification rule's recipients in Settings, Notifications (roles, and single people who

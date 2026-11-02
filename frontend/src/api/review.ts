@@ -93,20 +93,32 @@ function useInvalidateAfterDecision() {
     );
 }
 
-export function useReviewDecision() {
+/**
+ * After a success the data is fetched again `holdMs` later, so the queue can show the card's "Resolved" mark before
+ * the card leaves (D-121); after a failure at once.
+ */
+function useSettle(holdMs: number) {
   const invalidate = useInvalidateAfterDecision();
+  return (_data: unknown, error: Error | null) => {
+    if (error || holdMs === 0) void invalidate();
+    else window.setTimeout(() => void invalidate(), holdMs);
+  };
+}
+
+export function useReviewDecision(holdMs = 0) {
+  const settle = useSettle(holdMs);
   return useMutation({
     mutationFn: ({ code, body }: { code: string; body: DecisionRequest }) =>
       request<ReviewApplied>(`/review/${encodeURIComponent(code)}/decision`, { method: 'POST', body }),
-    onSettled: invalidate,
+    onSettled: settle,
   });
 }
 
-export function useReviewBulk() {
-  const invalidate = useInvalidateAfterDecision();
+export function useReviewBulk(holdMs = 0) {
+  const settle = useSettle(holdMs);
   return useMutation({
     mutationFn: (body: BulkRequest) => request<ReviewApplied>('/review/bulk', { method: 'POST', body }),
-    onSettled: invalidate,
+    onSettled: settle,
   });
 }
 

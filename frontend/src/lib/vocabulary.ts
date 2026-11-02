@@ -14,34 +14,73 @@ export interface Term {
 
 /** A face profile's status (FACE_STATUS). */
 export const FACE_STATUS = {
-  ENROLLED: { label: 'Enrolled', tone: 'green', icon: 'checkCircle' },
-  NOT_ENROLLED: { label: 'Not enrolled', tone: 'grey', icon: 'minus' },
-  NEEDS_REENROL: { label: 'Needs re-enrolment', tone: 'amber', icon: 'refresh' },
-  CONSENT_PENDING: { label: 'Consent pending', tone: 'amber', icon: 'hourglass' },
-  DEACTIVATED: { label: 'Deactivated', tone: 'grey', icon: 'ban' },
-  ERASED: { label: 'Erased', tone: 'red', icon: 'trash' },
+  ENROLLED: {
+    label: 'Enrolled',
+    tone: 'green',
+    icon: 'checkCircle',
+    description: 'Has face templates: recognised by the camera',
+  },
+  NOT_ENROLLED: { label: 'Not enrolled', tone: 'grey', icon: 'minus', description: 'No face templates yet' },
+  NEEDS_REENROL: {
+    label: 'Needs re-enrolment',
+    tone: 'amber',
+    icon: 'refresh',
+    description: 'The templates need replacing (e.g. after a model change): enrol again',
+  },
+  CONSENT_PENDING: {
+    label: 'Consent pending',
+    tone: 'amber',
+    icon: 'hourglass',
+    description: 'Waiting for consent before enrolment',
+  },
+  DEACTIVATED: { label: 'Deactivated', tone: 'grey', icon: 'ban', description: 'The face profile is switched off' },
+  ERASED: { label: 'Erased', tone: 'red', icon: 'trash', description: 'Face data erased on request' },
 } as const satisfies Record<string, Term>;
 export type FaceStatus = keyof typeof FACE_STATUS;
 
 /** How a crossing was identified (METHODS). */
 export const METHODS = {
-  FACE: { label: 'Face', icon: 'face' },
-  REID: { label: 'Re-ID', icon: 'body' },
-  REVIEW: { label: 'Review', icon: 'review' },
-} as const satisfies Record<string, { label: string; icon: IconName }>;
+  FACE: { label: 'Face', icon: 'face', description: 'Recognised by face' },
+  REID: {
+    label: 'Re-ID',
+    icon: 'body',
+    description: 'Recognised from behind by body and clothes, matched with who came in today',
+  },
+  REVIEW: { label: 'Review', icon: 'review', description: 'Decided by a reviewer in the Review Queue' },
+} as const satisfies Record<string, { label: string; icon: IconName; description: string }>;
 export type Method = keyof typeof METHODS;
 
 /** What a crossing did to attendance (PUNCH_EFFECTS + EFFECT_CHIPS). */
 export const EFFECTS = {
-  CHECK_IN: { label: 'Check-in', tone: 'green' },
-  CHECK_OUT: { label: 'Check-out', tone: 'blue' },
-  MOVEMENT: { label: 'Movement', tone: 'grey' },
-  IGNORED_DUPLICATE: { label: 'Ignored – duplicate', tone: 'amber' },
-  IGNORED_TURNED_BACK: { label: 'Ignored – turned back', tone: 'amber' },
-  IGNORED_UNKNOWN: { label: 'Ignored – unknown', tone: 'grey' },
-  PENDING_REVIEW: { label: 'Pending review', tone: 'purple' },
-  VOIDED: { label: 'Voided', tone: 'red' },
-} as const satisfies Record<string, { label: string; tone: ChipTone }>;
+  CHECK_IN: { label: 'Check-in', tone: 'green', description: 'The first IN of the shift day: the check-in time' },
+  CHECK_OUT: {
+    label: 'Check-out',
+    tone: 'blue',
+    description: 'The last OUT of the shift day so far: the check-out time',
+  },
+  MOVEMENT: {
+    label: 'Movement',
+    tone: 'grey',
+    description: 'Recorded, but neither the check-in nor the check-out (e.g. a step out in between)',
+  },
+  IGNORED_DUPLICATE: {
+    label: 'Ignored – duplicate',
+    tone: 'amber',
+    description: 'The same direction again within the duplicate window: not counted',
+  },
+  IGNORED_TURNED_BACK: {
+    label: 'Ignored – turned back',
+    tone: 'amber',
+    description: 'An IN and an OUT within the turn-back window cancel each other',
+  },
+  IGNORED_UNKNOWN: {
+    label: 'Ignored – unknown',
+    tone: 'grey',
+    description: 'Nobody was identified and the review item expired: not counted',
+  },
+  PENDING_REVIEW: { label: 'Pending review', tone: 'purple', description: 'Waiting for a reviewer to say who it was' },
+  VOIDED: { label: 'Voided', tone: 'red', description: 'Removed by a correction (wrong person)' },
+} as const satisfies Record<string, { label: string; tone: ChipTone; description: string }>;
 export type Effect = keyof typeof EFFECTS;
 
 /** How a crossing was decided (DECISIONS). */
@@ -114,36 +153,61 @@ export const EMPLOYMENT_TYPES = { EMPLOYEE: 'Employee', CONTRACTOR: 'Contractor'
 
 /** A punch's state in the HRMS outbox (HRMS_CHIPS); "held" is the dummy integration's state (P-07). */
 export const HRMS_STATUS = {
-  SENT: { label: 'Sent', tone: 'green', icon: 'check' },
-  PENDING: { label: 'Pending', tone: 'grey', icon: 'clock' },
-  FAILED: { label: 'Failed', tone: 'red', icon: 'alertCircle' },
-  VOIDED: { label: 'Voided', tone: 'grey', icon: 'ban' },
-  BLOCKED_NO_EMPLOYEE_ID: { label: 'Blocked – no Employee ID', tone: 'amber', icon: 'alert' },
-  HELD_NOT_CONNECTED: { label: 'Held – HRMS not connected', tone: 'grey', icon: 'hourglass' },
+  SENT: { label: 'Sent', tone: 'green', icon: 'check', description: 'Delivered to KRZ HRMS' },
+  PENDING: { label: 'Pending', tone: 'grey', icon: 'clock', description: 'Waiting to be sent' },
+  FAILED: { label: 'Failed', tone: 'red', icon: 'alertCircle', description: 'Sending failed; it is tried again' },
+  VOIDED: { label: 'Voided', tone: 'grey', icon: 'ban', description: 'Cancelled by a correction' },
+  BLOCKED_NO_EMPLOYEE_ID: {
+    label: 'Blocked – no Employee ID',
+    tone: 'amber',
+    icon: 'alert',
+    description: 'The person has no HRMS Employee ID yet',
+  },
+  HELD_NOT_CONNECTED: {
+    label: 'Held – HRMS not connected',
+    tone: 'grey',
+    icon: 'hourglass',
+    description: 'Kept until KRZ HRMS is connected',
+  },
 } as const satisfies Record<string, Term>;
 export type HrmsStatus = keyof typeof HRMS_STATUS;
 
 /** Liveness of a crossing (livenessHTML); "skipped" when the camera's liveness check is off. */
 export const LIVENESS = {
-  PASSED: { label: 'Liveness passed', tone: 'green', icon: 'shieldCheck' },
-  FAILED: { label: 'Liveness failed', tone: 'red', icon: 'shieldAlert' },
-  SKIPPED: { label: 'Liveness not checked', tone: 'grey', icon: 'shield' },
+  PASSED: {
+    label: 'Liveness passed',
+    tone: 'green',
+    icon: 'shieldCheck',
+    description: 'The face looked real, not a photo or a screen',
+  },
+  FAILED: {
+    label: 'Liveness failed',
+    tone: 'red',
+    icon: 'shieldAlert',
+    description: 'Looked like a photo or a screen: sent to Review',
+  },
+  SKIPPED: {
+    label: 'Liveness not checked',
+    tone: 'grey',
+    icon: 'shield',
+    description: 'The liveness check is off for this camera',
+  },
 } as const satisfies Record<string, Term>;
 
 /** Confidence bands (confidenceBand): the chip shown instead of a score without settings.recognition. */
 export const CONFIDENCE = {
-  HIGH: { label: 'High', tone: 'green' },
-  MEDIUM: { label: 'Medium', tone: 'blue' },
-  LOW: { label: 'Low', tone: 'amber' },
-} as const satisfies Record<string, { label: string; tone: ChipTone }>;
+  HIGH: { label: 'High', tone: 'green', description: 'Match score well above the accept threshold' },
+  MEDIUM: { label: 'Medium', tone: 'blue', description: 'Match score above the accept threshold' },
+  LOW: { label: 'Low', tone: 'amber', description: 'Match score below the accept threshold' },
+} as const satisfies Record<string, { label: string; tone: ChipTone; description: string }>;
 export type Confidence = keyof typeof CONFIDENCE;
 
 /** Consent to face recognition (CONSENT_STATUS). */
 export const CONSENT_STATUS = {
-  GIVEN: { label: 'Given', tone: 'green', icon: 'check' },
-  PENDING: { label: 'Pending', tone: 'amber', icon: 'hourglass' },
-  NONE: { label: 'Not asked', tone: 'grey', icon: 'minus' },
-  WITHDRAWN: { label: 'Withdrawn', tone: 'red', icon: 'x' },
+  GIVEN: { label: 'Given', tone: 'green', icon: 'check', description: 'Consent to face recognition is on file' },
+  PENDING: { label: 'Pending', tone: 'amber', icon: 'hourglass', description: 'Asked, not answered yet' },
+  NONE: { label: 'Not asked', tone: 'grey', icon: 'minus', description: 'Consent has not been asked yet' },
+  WITHDRAWN: { label: 'Withdrawn', tone: 'red', icon: 'x', description: 'Consent withdrawn: face data is removed' },
 } as const satisfies Record<string, Term>;
 
 /** How consent was recorded or withdrawn. */

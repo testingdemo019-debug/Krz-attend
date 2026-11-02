@@ -15,6 +15,7 @@ import { Card } from '@/components/layout/Card';
 import { PageHead } from '@/components/layout/PageHead';
 import { ButtonLink } from '@/components/ui/Button';
 import { Segmented } from '@/components/ui/Segmented';
+import { ReportSkeleton } from '@/components/ui/Skeleton';
 import { ScrollArea } from '@/components/layout/ScrollArea';
 import { addDays, fmtDateShort, fmtDay, fmtDuration, todayDay } from '@/lib/format';
 import { useCan, useShowScores } from '@/lib/permissions';
@@ -69,8 +70,10 @@ export function RecognitionPage() {
       />
       {report.isError ? (
         <ErrorState what="the report" onRetry={() => void report.refetch()} />
+      ) : report.data ? (
+        <Body report={report.data} />
       ) : (
-        report.data && <Body report={report.data} />
+        <ReportSkeleton kpis={7} />
       )}
     </>
   );
