@@ -122,7 +122,12 @@ Desktop. Only ports 80 and 443 are open to the network: port 80 only redirects t
 - In Microsoft Entra, under App registrations, KRZ Attend, Authentication, add
   `https://<your name>/login/oauth2/code/azure`.
 - A certificate for your name, as two files in `deploy\nginx\certs`: `fullchain.pem` and `privkey.pem`. They stay out of
-  Git; never share the private key.
+  Git; never share the private key. If your DNS is on Cloudflare, create an API token there (My Profile, API Tokens,
+  template "Edit zone DNS", your domain only), then run this with Docker Desktop running. It asks for the token, gets a free
+  certificate from Let's Encrypt and registers a daily task that renews it.
+```powershell
+powershell -ExecutionPolicy Bypass -File deploy\scripts\certificate.ps1 --domain=<your name>
+```
 
 **Then:**
 1. In `deploy\.env` set `APP_ENV=prod`, `APP_BASE_URL=https://<your name>` and leave `MAIL_TEST_RECIPIENT` empty. From now

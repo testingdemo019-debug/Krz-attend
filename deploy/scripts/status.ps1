@@ -52,3 +52,11 @@ try {
 
 $task = Get-ScheduledTask -TaskName 'KRZ Attend' -ErrorAction SilentlyContinue
 if ($task) { "Scheduled task 'KRZ Attend': $($task.State)" } else { "Scheduled task 'KRZ Attend': not installed" }
+
+# Certbot renews with 30 days left, so fewer than 20 means the daily renewal has been failing.
+$chain = Join-Path (Split-Path $PSScriptRoot) 'nginx\certsullchain.pem'
+if ($production -and (Test-Path -LiteralPath $chain)) {
+    $until = (New-Object Security.Cryptography.X509Certificates.X509Certificate2 $chain).NotAfter
+    $left = ($until - (Get-Date)).Days
+    "Certificate: valid until $($until.ToString('yyyy-MM-dd')), $left days$(if ($left -lt 20) { ' - NOT RENEWING: see data\logs\certificate.log' })"
+}
