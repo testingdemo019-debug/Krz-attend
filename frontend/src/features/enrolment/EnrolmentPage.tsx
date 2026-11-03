@@ -37,7 +37,6 @@ import { EnrolSuccess, SaveStep } from './SaveStep';
 import { lockedNow, SelectStep } from './SelectStep';
 import { UploadStep } from './UploadStep';
 import { goodCaptures, initialWizard, STEP_NAMES, wizardReducer } from './wizard';
-import './Enrolment.module.css';
 
 const GIVEN_METHODS = new Set(['WRITTEN_FORM', 'EMAIL_CONFIRMATION']);
 

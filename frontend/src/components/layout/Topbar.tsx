@@ -9,7 +9,6 @@ import { GlobalSearch } from './topbar/GlobalSearch';
 import { NotificationsMenu } from './topbar/NotificationsMenu';
 import { StatusPill } from './topbar/StatusPill';
 import { UserMenu } from './topbar/UserMenu';
-import './Topbar.module.css';
 
 /**
  * The prototype's topbarHTML: menu toggle, global search, status pill, Review Queue, notifications and the user.

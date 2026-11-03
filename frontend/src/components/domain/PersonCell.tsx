@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react';
 import { Chip } from '@/components/ui/Chip';
 import { Avatar } from '@/components/ui/Avatar';
-import './PersonCell.module.css';
 
 /** The prototype's employeeIdHTML: the HRMS Employee ID, or the amber "No Employee ID" chip. */
 export function EmployeeIdText({ employeeId }: { employeeId: string | null }) {

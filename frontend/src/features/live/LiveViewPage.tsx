@@ -30,7 +30,6 @@ import { containRect, OVERLAY_OPTIONS, readOverlayPrefs, writeOverlayPrefs, type
 import { usePermissionCheck } from '@/lib/permissions';
 import { readPreference, writePreference } from '@/lib/storage';
 import { DIRECTION_MODES, term } from '@/lib/vocabulary';
-import './LiveView.module.css';
 
 /** The prototype's BOX_COLOURS, for the legend. */
 const LEGEND = [

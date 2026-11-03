@@ -3,7 +3,6 @@ import { Link, type LinkProps } from 'react-router';
 import { Icon, type IconName } from '@/components/icons/Icon';
 import { cx } from '@/lib/cx';
 import { tip, type TipPosition } from './Tooltip';
-import './Button.module.css';
 
 interface IconButtonLook {
   icon: IconName;

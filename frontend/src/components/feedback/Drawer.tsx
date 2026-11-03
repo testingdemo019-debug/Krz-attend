@@ -6,8 +6,6 @@ import { Icon } from '@/components/icons/Icon';
 import { ScrollArea } from '@/components/layout/ScrollArea';
 import { cx } from '@/lib/cx';
 import { focusFirstControl, keepOpenForToasts } from './Modal';
-import './Modal.module.css';
-import './Drawer.module.css';
 
 export function Drawer({
   open,

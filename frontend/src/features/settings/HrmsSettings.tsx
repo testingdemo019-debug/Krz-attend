@@ -22,7 +22,6 @@ import { useCan } from '@/lib/permissions';
 import { plural } from '@/lib/text';
 import { useNow } from '@/lib/useNow';
 import { HRMS_STATUS, term } from '@/lib/vocabulary';
-import '@/components/ui/CodeBlock.module.css';
 import { ScrollArea } from '@/components/layout/ScrollArea';
 
 const DEFAULT_SORT: SortState = { key: 'created', dir: 'desc' };

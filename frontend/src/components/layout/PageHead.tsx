@@ -1,5 +1,4 @@
 import type { ReactNode } from 'react';
-import './PageHead.module.css';
 
 /** The page title row: h1, the grey sub-line and the actions on the right (wrapping on narrow screens). */
 export function PageHead({ title, sub, actions }: { title: ReactNode; sub?: ReactNode; actions?: ReactNode }) {

@@ -20,8 +20,6 @@ import { cx } from '@/lib/cx';
 import { CAPTURE_POSES, type PoseKey } from './guidance';
 import { PersonBar } from './SelectStep';
 import { WizardNav } from './WizardNav';
-import '@/components/domain/CropImage.module.css';
-import './Enrolment.module.css';
 
 export function ReviewStep({
   candidate,

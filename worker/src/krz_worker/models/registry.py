@@ -39,6 +39,11 @@ _PROVIDERS = {
 }
 
 
+#: In MODELS_DIR: the SHA-256 of the models this machine exported itself. An export is not byte-identical between
+#: machines, so it cannot match models.json, which is in Git. Downloaded models always must.
+LOCAL_EXPORTS = "local-exports.json"
+
+
 class ModelIntegrityError(RuntimeError):
     """A model file is missing or differs from models.json: the worker must not run on it."""
 
@@ -111,10 +116,21 @@ def load(settings: Settings) -> Models:
     return models
 
 
+def accepted_sha256(entry: dict[str, Any], models_dir: Path) -> set[str]:
+    """What a model file may hash to: models.json's value and, for an exported model, this machine's own export."""
+    accepted = {entry["sha256"]} if entry.get("sha256") else set()
+    local = models_dir / LOCAL_EXPORTS
+    if "export" in entry and local.is_file():
+        own = json.loads(local.read_text(encoding="utf-8")).get(entry["file"])
+        if own:
+            accepted.add(own)
+    return accepted
+
+
 def _verified(entry: dict[str, Any], models_dir: Path) -> ModelInfo:
     file = models_dir / entry["file"]
-    expected = entry.get("sha256")
-    if expected is None:
+    accepted = accepted_sha256(entry, models_dir)
+    if not accepted:
         raise ModelIntegrityError(f"{entry['file']} has no SHA-256 in models.json (run scripts/download_models.py)")
     if not file.is_file():
         raise ModelIntegrityError(f"{file} is missing (run scripts/download_models.py)")
@@ -122,9 +138,10 @@ def _verified(entry: dict[str, Any], models_dir: Path) -> ModelInfo:
     with file.open("rb") as handle:
         for chunk in iter(lambda: handle.read(1 << 20), b""):
             digest.update(chunk)
-    if digest.hexdigest() != expected:
-        raise ModelIntegrityError(f"{entry['file']}: SHA-256 {digest.hexdigest()} differs from models.json")
-    return ModelInfo(entry["role"], entry["name"], entry["version"], entry["licence"], expected, entry["file"])
+    actual = digest.hexdigest()
+    if actual not in accepted:
+        raise ModelIntegrityError(f"{entry['file']}: SHA-256 {actual} differs from models.json")
+    return ModelInfo(entry["role"], entry["name"], entry["version"], entry["licence"], actual, entry["file"])
 
 
 def _scale(info: ModelInfo) -> float:

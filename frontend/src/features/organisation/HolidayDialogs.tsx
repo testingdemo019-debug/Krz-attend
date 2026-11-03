@@ -29,8 +29,6 @@ import { addDays, fmtDate, todayDay } from '@/lib/format';
 import { plural } from '@/lib/text';
 import { HOLIDAY_TYPES, term } from '@/lib/vocabulary';
 import { holidaySchema, type HolidayInput, type HolidayValues } from './schemas';
-import '@/components/data/DataTable.module.css';
-import '@/components/form/Field.module.css';
 
 const SERVER_FIELDS: Record<string, keyof HolidayInput> = {
   date: 'date',

@@ -1,6 +1,5 @@
 import { toMillis, fmtTime, type Instant } from '@/lib/format';
 import { Legend } from './Legend';
-import './Chart.module.css';
 
 export interface TimelineCrossing {
   at: Instant;

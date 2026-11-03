@@ -1,6 +1,5 @@
 import type { InputHTMLAttributes, ReactNode } from 'react';
 import { cx } from '@/lib/cx';
-import './Check.module.css';
 
 /** The prototype's label.check: a native checkbox (accent colour) and its text. */
 export function Check({

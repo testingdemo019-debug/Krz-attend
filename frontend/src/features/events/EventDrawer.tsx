@@ -31,8 +31,6 @@ import { trackName } from '@/lib/text';
 import { fmtDate, fmtDateTime, fmtDay, fmtTime, zoneLabel } from '@/lib/format';
 import { usePermissionCheck, useNeedsPermissionText } from '@/lib/permissions';
 import { useCorrectionFlow } from '@/features/attendance/useCorrection';
-import '@/components/data/DataTable.module.css';
-import '@/components/domain/Timeline.module.css';
 
 /**
  * "Add face crop as template" (D-118): a clear face of an identified crossing becomes the employee's template, so walks

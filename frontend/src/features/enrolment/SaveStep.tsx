@@ -17,7 +17,6 @@ import { CONSENT_METHODS, TRACKING_REASONS } from '@/lib/vocabulary';
 import { PersonBar } from './SelectStep';
 import { TestRecognitionDialog } from './TestRecognitionDialog';
 import type { ConsentDraft } from './wizard';
-import './Enrolment.module.css';
 
 export function SaveStep({
   candidate,

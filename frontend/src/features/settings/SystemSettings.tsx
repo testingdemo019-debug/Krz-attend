@@ -14,7 +14,6 @@ import { KeyValueList } from '@/components/ui/KeyValueList';
 import { SkeletonRows } from '@/components/ui/Skeleton';
 import { fmtDate, fmtDateTime } from '@/lib/format';
 import { plural } from '@/lib/text';
-import '@/components/domain/HealthRow.module.css';
 
 const DOT: Record<StatusRow['level'], string> = { OK: 'ok', WARN: 'warn', BAD: 'bad', DISABLED: 'off' };
 

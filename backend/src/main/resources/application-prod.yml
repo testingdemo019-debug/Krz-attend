@@ -1,4 +1,9 @@
 # Production (containers behind nginx). JSON logs come from logback-spring.xml's prod profile.
+spring:
+  flyway:
+    # A database that began under the dev profile has the dev seed recorded as applied; production does not ship it.
+    ignore-migration-patterns: "repeatable:missing"
+
 server:
   servlet:
     session:

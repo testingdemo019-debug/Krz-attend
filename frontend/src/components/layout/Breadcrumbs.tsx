@@ -1,7 +1,6 @@
 import { Fragment } from 'react';
 import { Link } from 'react-router';
 import { Icon } from '@/components/icons/Icon';
-import './Breadcrumbs.module.css';
 
 export interface Crumb {
   label: string;

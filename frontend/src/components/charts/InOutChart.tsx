@@ -1,5 +1,4 @@
 import { niceMax } from './scale';
-import './Chart.module.css';
 
 export interface ChartMarker {
   index: number;

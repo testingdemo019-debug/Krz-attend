@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react';
 import { Icon, type IconName } from '@/components/icons/Icon';
 import { cx } from '@/lib/cx';
-import './Segmented.module.css';
 
 export interface Segment<T extends string> {
   value: T;

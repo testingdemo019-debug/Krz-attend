@@ -1,5 +1,4 @@
 import type { CSSProperties, ReactNode } from 'react';
-import './Kbd.module.css';
 
 export function Kbd({
   children,

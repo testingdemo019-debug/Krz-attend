@@ -44,7 +44,6 @@ import { navigationPreview } from '@/lib/nav';
 import type { PermissionKey } from '@/lib/permissions';
 import { plural } from '@/lib/text';
 import { useNow } from '@/lib/useNow';
-import '@/components/form/Field.module.css';
 
 const SYSTEM_ADMIN = 'ROLE-SYSADMIN';
 const ENROLLER = 'ROLE-ENROLLER';

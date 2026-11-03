@@ -52,9 +52,6 @@ import {
   term,
 } from '@/lib/vocabulary';
 import { EmploymentEditor } from './EmploymentEditor';
-import '@/components/domain/CropImage.module.css';
-import '@/components/domain/Timeline.module.css';
-import '@/components/data/DataTable.module.css';
 
 type Tab = 'overview' | 'face' | 'attendance' | 'activity';
 const TABS = [

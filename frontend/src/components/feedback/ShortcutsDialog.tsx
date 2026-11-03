@@ -1,5 +1,4 @@
 import { Kbd } from '@/components/ui/Kbd';
-import '@/components/data/DataTable.module.css';
 import { Modal } from './Modal';
 
 const SHORTCUTS: readonly (readonly [string, string])[] = [

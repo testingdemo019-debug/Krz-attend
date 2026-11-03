@@ -28,8 +28,6 @@ import { CropGallery } from './CropGallery';
 import { ResolvedTable } from './ResolvedTable';
 import { ReviewCard } from './ReviewCard';
 import { BULK_LABELS, useReviewDecisions, type BulkOp, type CardChoice } from './useReviewDecisions';
-import '@/components/form/Check.module.css';
-import './ReviewQueue.module.css';
 
 type TabKey = 'unknown' | 'uncertain' | 'reid' | 'liveness' | 'resolved';
 const TAB_KEYS: readonly TabKey[] = ['unknown', 'uncertain', 'reid', 'liveness', 'resolved'];

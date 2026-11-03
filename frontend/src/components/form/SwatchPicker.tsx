@@ -1,5 +1,4 @@
 /** The prototype's shift colour picker: a radio group of swatches. */
-import './SwatchPicker.module.css';
 
 export function SwatchPicker({
   colours,

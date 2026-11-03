@@ -26,7 +26,6 @@ import { useCheckOnEveryChange } from '@/lib/forms';
 import { plural } from '@/lib/text';
 import { EMPLOYMENT_TYPES, TRACKING_REASONS } from '@/lib/vocabulary';
 import { EMPLOYMENT_FIELDS, employmentSchema, type EmploymentInput, type EmploymentValues } from './schemas';
-import '@/components/form/Field.module.css';
 
 const ACTIVE_FACE = new Set(['ENROLLED', 'NEEDS_REENROL']);
 

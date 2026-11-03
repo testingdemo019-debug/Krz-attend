@@ -1,0 +1,10 @@
+# Production on a Windows machine (D-125), added by deploy/scripts/start-all when APP_ENV=prod: PostgreSQL and the GPU
+# worker run on Windows itself, the rest in these containers. The worker reaches Redis on 127.0.0.1 and the backend
+# reaches the worker through Docker Desktop's host.docker.internal.
+services:
+  redis:
+    ports:
+      - "127.0.0.1:6379:6379"
+  backend:
+    environment:
+      WORKER_API_URL: http://host.docker.internal:8090

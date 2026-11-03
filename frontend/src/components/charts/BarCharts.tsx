@@ -4,7 +4,6 @@
  * recognition per day).
  */
 import { niceMax } from './scale';
-import './Chart.module.css';
 
 export interface Bar {
   label: string;

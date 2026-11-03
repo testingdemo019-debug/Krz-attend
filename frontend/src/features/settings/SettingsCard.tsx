@@ -3,8 +3,6 @@ import type { ReactNode } from 'react';
 import { UnsavedChangesBar } from '@/components/feedback/UnsavedChangesBar';
 import { cx } from '@/lib/cx';
 import { UnsavedChangesGuard, type Draft } from '@/lib/useDraft';
-import '@/components/form/Field.module.css';
-import '@/components/layout/SettingsLayout.module.css';
 
 /** The page's card: title, sub-line, the body and, for an editable page, the save bar and the leave guard. */
 export function SettingsCard<T>({

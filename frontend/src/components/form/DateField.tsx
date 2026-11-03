@@ -10,7 +10,6 @@ import { Button } from '@/components/ui/Button';
 import { IconButton } from '@/components/ui/IconButton';
 import { cx } from '@/lib/cx';
 import { addDays, fmtDate, fmtDay, MONTH_NAMES, todayDay, weekdayOf, type Day } from '@/lib/format';
-import './DateField.module.css';
 
 const WIDTH = 272;
 const HEIGHT = 300;

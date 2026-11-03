@@ -30,6 +30,8 @@ class Settings(BaseSettings):
     execution_provider: Literal["tensorrt", "cuda", "cpu"] = Field("cuda", validation_alias="WORKER_EXECUTION_PROVIDER")
     gpu_device: int = Field(0, validation_alias="WORKER_GPU_DEVICE", ge=0)
     max_fps: float = Field(12.0, validation_alias="WORKER_MAX_FPS", gt=0, le=30)
+    #: All interfaces inside a container, on its internal network; on the host this machine only (load).
+    api_host: str = "0.0.0.0"  # noqa: S104
     api_port: int = Field(8090, validation_alias="WORKER_API_PORT", ge=1, le=65535)
     api_token: SecretStr = Field(validation_alias="WORKER_API_TOKEN", min_length=48)
 
@@ -81,6 +83,7 @@ def load(host_dev: bool = False) -> Loaded:
         update={
             "db_host": "localhost",
             "redis_host": "localhost",
+            "api_host": "127.0.0.1",
             "data_dir": data_dir,
             "models_dir": data_dir / "models",
             "trt_cache_dir": data_dir / "trt_cache",

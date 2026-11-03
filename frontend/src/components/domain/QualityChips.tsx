@@ -1,6 +1,5 @@
 import type { components } from '@/api/schema';
 import { Chip } from '@/components/ui/Chip';
-import '@/features/review/ReviewQueue.module.css';
 
 export type FaceQuality = components['schemas']['FaceQuality'];
 

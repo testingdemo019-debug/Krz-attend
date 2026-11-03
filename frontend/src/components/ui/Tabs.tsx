@@ -1,7 +1,6 @@
 import { Icon, type IconName } from '@/components/icons/Icon';
 import { cx } from '@/lib/cx';
 import { Badge } from './Badge';
-import './Tabs.module.css';
 
 export interface TabItem<K extends string> {
   key: K;

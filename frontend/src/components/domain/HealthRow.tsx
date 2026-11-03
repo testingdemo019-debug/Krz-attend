@@ -1,6 +1,5 @@
 import type { StatusRow } from '@/api/shell';
 import { STATUS_LEVEL } from '@/lib/vocabulary';
-import './HealthRow.module.css';
 
 /** One service in the status lists (the prototype's statusRowsHTML): dot, label, muted detail and the state. */
 export function HealthRow({ row }: { row: StatusRow }) {

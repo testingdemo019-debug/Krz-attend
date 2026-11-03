@@ -77,9 +77,6 @@ export default defineConfig(({ command, mode }) => {
   return {
     plugins: [react(), devCspNonce(), mockMode()],
     resolve: { alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } },
-    // The prototype's class names are kept as they are (D-081): modules give each component its own file, while
-    // descendant selectors across components (.input-group .btn, .tile-head .icon-btn) keep working.
-    css: { modules: { generateScopedName: '[local]' } },
     // Every module is scanned at start, so a lazy page never makes the dev server re-optimise and reload mid-session.
     optimizeDeps: { entries: ['index.html', 'src/**/*.tsx', 'test/mock/entry.ts'] },
     server: {
@@ -119,7 +116,6 @@ export default defineConfig(({ command, mode }) => {
       environment: 'jsdom',
       setupFiles: ['./test/setup.ts'],
       include: ['src/**/*.test.{ts,tsx}', 'test/unit/**/*.test.{ts,tsx}'],
-      css: { modules: { classNameStrategy: 'non-scoped' } },
       restoreMocks: true,
     },
   };

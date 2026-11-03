@@ -100,7 +100,7 @@ class Supervisor:
         self._api = uvicorn.Server(
             uvicorn.Config(
                 api_app.create(context),
-                host="0.0.0.0",  # noqa: S104 - the internal network; dev publishes 127.0.0.1 only
+                host=settings.api_host,
                 port=settings.api_port,
                 log_config=None,
                 access_log=False,

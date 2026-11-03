@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react';
 import { Icon, type IconName } from '@/components/icons/Icon';
 import { Button } from '@/components/ui/Button';
-import './EmptyState.module.css';
 
 /** The prototype's emptyState: round icon, title, text and an optional action. */
 export function EmptyState({

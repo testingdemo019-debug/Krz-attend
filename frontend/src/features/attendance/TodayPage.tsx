@@ -27,7 +27,6 @@ import { DASH, exportFileName, fmtDay, fmtDuration, fmtTime, todayDay } from '@/
 import { useNow } from '@/lib/useNow';
 import { ATTENDANCE_STATUS, EMPLOYMENT_TYPES } from '@/lib/vocabulary';
 import { EvacuationDialog } from './EvacuationDialog';
-import '@/components/charts/Legend.module.css';
 
 /** The prototype's TODAY_FILTERS, in its order. */
 const QUICK = [

@@ -30,7 +30,6 @@ import {
   type TableControl,
   type TableFilter,
 } from './tableState';
-import './DataTable.module.css';
 
 export interface Page<T> {
   items: T[];

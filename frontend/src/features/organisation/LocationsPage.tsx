@@ -28,7 +28,6 @@ import { plural } from '@/lib/text';
 import { useNow } from '@/lib/useNow';
 import { RECORD_STATUS, term } from '@/lib/vocabulary';
 import { LocationEditor } from './LocationEditor';
-import '@/components/data/DataTable.module.css';
 
 const DEFAULT_SORT: SortState = { key: 'name', dir: 'asc' };
 

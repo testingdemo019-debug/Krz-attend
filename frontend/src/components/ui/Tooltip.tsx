@@ -1,5 +1,3 @@
-import './Tooltip.module.css';
-
 export type TipPosition = 'top' | 'bottom' | 'left';
 
 /**

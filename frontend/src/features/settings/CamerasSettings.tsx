@@ -48,9 +48,6 @@ import { plural } from '@/lib/text';
 import { COUNTING_METHODS, DIRECTION_MODES, term, type CountingMethod } from '@/lib/vocabulary';
 import { useQuery } from '@tanstack/react-query';
 import { SettingField } from './SettingsCard';
-import './Cameras.module.css';
-import '@/components/feedback/UnsavedChangesBar.module.css';
-import '@/components/ui/StatStrip.module.css';
 
 const IPV4 = /^((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.){3}(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)$/;
 const CANVAS_W = 960;

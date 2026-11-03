@@ -2,7 +2,6 @@ import { useLayoutEffect, useRef, type ReactNode } from 'react';
 import { Icon } from '@/components/icons/Icon';
 import { Button } from '@/components/ui/Button';
 import type { Draft } from '@/lib/useDraft';
-import './UnsavedChangesBar.module.css';
 
 /**
  * The prototype's .savebar: "Unsaved changes", Discard and Save changes, stuck to the bottom of the page's card. While

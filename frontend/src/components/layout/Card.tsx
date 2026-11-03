@@ -1,6 +1,5 @@
 import type { CSSProperties, ReactNode } from 'react';
 import { cx } from '@/lib/cx';
-import './Card.module.css';
 
 /** The prototype's .card with an optional .card-head (h2 title + actions) and a .card-body (flush = no padding). */
 export function Card({

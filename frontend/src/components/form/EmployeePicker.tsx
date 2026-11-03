@@ -12,8 +12,6 @@ import { Icon } from '@/components/icons/Icon';
 import { Avatar } from '@/components/ui/Avatar';
 import { Spinner } from '@/components/ui/Spinner';
 import { DASH } from '@/lib/format';
-import '@/components/data/DataTable.module.css';
-import './EmployeePicker.module.css';
 
 export function EmployeePicker({
   open,

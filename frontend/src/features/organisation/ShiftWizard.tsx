@@ -29,7 +29,6 @@ import { addDays, fmtDate, fmtShiftTiming, fmtWeeklyOffs, todayDay, WEEKDAY_LABE
 import { plural } from '@/lib/text';
 import { SHIFT_COLOURS } from '@/lib/vocabulary';
 import { messages, shiftBasicsSchema, shiftHours, shiftRulesSchema, shiftVersionSchema } from './schemas';
-import '@/components/form/Field.module.css';
 
 export interface ShiftWizardStart {
   source: ShiftCard | null;

@@ -50,10 +50,6 @@ import { PoseIcon, READY_TIPS, TipIcon } from './illustrations';
 import { landmarker } from './landmarker';
 import { lockedNow, PersonBar } from './SelectStep';
 import { WizardNav } from './WizardNav';
-import '@/components/domain/CameraTile.module.css';
-import '@/components/feedback/EmptyState.module.css';
-import '@/components/form/Field.module.css';
-import './Enrolment.module.css';
 
 type Phase = 'ready' | 'starting' | 'capturing' | 'liveness' | 'done' | 'error' | 'timeout';
 

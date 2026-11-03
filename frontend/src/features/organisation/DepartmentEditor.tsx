@@ -25,7 +25,6 @@ import { Callout } from '@/components/ui/Callout';
 import { useCheckOnEveryChange } from '@/lib/forms';
 import { plural } from '@/lib/text';
 import { departmentSchema, type DepartmentInput, type DepartmentValues } from './schemas';
-import '@/components/form/Field.module.css';
 
 const SERVER_FIELDS: Record<string, keyof DepartmentInput> = {
   name: 'name',

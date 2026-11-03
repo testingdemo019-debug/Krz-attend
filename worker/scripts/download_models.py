@@ -3,8 +3,10 @@
 1. Every model with a ``url`` in worker/models/models.json is downloaded (skipped when the file already matches).
 2. The exported models (MiniFASNet) are built in a temporary virtual environment with torch, which is deleted
    afterwards: torch never reaches the worker image.
-3. A file must match the ``sha256`` in models.json. When models.json has none yet (first download or export) it is
-   recorded, but only with ``--record``; a later mismatch stops the script.
+3. A downloaded file must match the ``sha256`` in models.json. When models.json has none yet (first download or
+   export) it is recorded, but only with ``--record``; a later mismatch stops the script. An export is not
+   byte-identical between machines: a machine's own export is kept in MODELS_DIR/local-exports.json, never in
+   models.json.
 4. A model file that is no longer in models.json is removed from MODELS_DIR.
 5. worker/models/MODELS.md is rendered from models.json with each file's licence, source, SHA-256 and input/output
    shapes. models.json itself is only rewritten when something in it changed (it is in Git; a pull must not meet a
@@ -33,6 +35,8 @@ from pathlib import Path
 from typing import Any
 
 import onnxruntime as ort
+
+from krz_worker.models.registry import LOCAL_EXPORTS, accepted_sha256
 
 WORKER = Path(__file__).resolve().parent.parent
 CATALOG = WORKER / "models" / "models.json"
@@ -63,7 +67,16 @@ def accept(entry: dict[str, Any], path: Path, record: bool) -> None:
 
 
 def matches(entry: dict[str, Any], path: Path) -> bool:
-    return path.is_file() and entry.get("sha256") is not None and sha256(path) == entry["sha256"]
+    return path.is_file() and sha256(path) in accepted_sha256(entry, path.parent)
+
+
+def remember_export(entry: dict[str, Any], path: Path) -> None:
+    """This machine just exported the model itself: its checksum is accepted here, without touching models.json."""
+    local = path.parent / LOCAL_EXPORTS
+    known = json.loads(local.read_text(encoding="utf-8")) if local.is_file() else {}
+    known[entry["file"]] = sha256(path)
+    local.write_text(json.dumps(known, indent=2) + "\n", encoding="utf-8")
+    print(f"  this machine's own export: its checksum is kept in {local.name}")
 
 
 def download(entry: dict[str, Any], models_dir: Path, record: bool) -> None:
@@ -121,7 +134,11 @@ def export(entries: list[dict[str, Any]], models_dir: Path, record: bool) -> Non
             )
     for entry in pending:
         print(f"{entry['file']}: {entry['licence']}")
-        accept(entry, models_dir / entry["file"], record)
+        path = models_dir / entry["file"]
+        if entry.get("sha256") is None:
+            accept(entry, path, record)
+        elif not matches(entry, path):
+            remember_export(entry, path)
 
 
 def remove_retired(entries: list[dict[str, Any]], models_dir: Path) -> None:

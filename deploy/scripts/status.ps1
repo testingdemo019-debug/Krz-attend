@@ -7,7 +7,7 @@ $ErrorActionPreference = 'Stop'
 
 $opts = ConvertFrom-KrzCliArgs -CliArgs $CliArgs -Known @('help')
 if ($opts.ContainsKey('help')) {
-    'status - show which parts of KRZ Attend are running (ports 6379, 1984, 8080, 8090, 5173) and the cameras.'
+    'status - show which parts of KRZ Attend are running and the cameras (production when APP_ENV=prod in deploy\.env).'
     exit 0
 }
 
@@ -20,10 +20,24 @@ function Test-Port([int]$Port) {
     return $false
 }
 
-$rows = foreach ($part in @(
-        @{ Name = 'Redis'; Port = 6379 }, @{ Name = 'Media relay'; Port = 1984 }, @{ Name = 'Backend'; Port = 8080 },
-        @{ Name = 'Worker'; Port = 8090 }, @{ Name = 'Web app'; Port = 5173 })) {
-    [pscustomobject]@{ Part = $part.Name; Port = $part.Port; State = $(if (Test-Port $part.Port) { 'running' } else { 'STOPPED' }) }
+# In production (APP_ENV=prod) the backend and the media relay answer only inside Docker.
+function Get-ContainerState([string]$Service) {
+    $ErrorActionPreference = 'Continue'
+    $state = & docker inspect --format '{{.State.Health.Status}}' "krz-attend-$Service-1" 2>$null
+    if ($state -eq 'healthy') { 'running' } else { 'STOPPED' }
+}
+
+$production = $(if ($env:APP_ENV) { $env:APP_ENV } else { Get-KrzEnvValue -Path (Get-KrzEnvPath) -Key 'APP_ENV' -Default 'dev' }) -eq 'prod'
+$parts = if ($production) {
+    @(@{ Name = 'Redis'; Port = 6379 }, @{ Name = 'Media relay'; Service = 'media-relay' }, @{ Name = 'Backend'; Service = 'backend' },
+        @{ Name = 'Worker'; Port = 8090 }, @{ Name = 'Website (https)'; Port = 443 })
+} else {
+    @(@{ Name = 'Redis'; Port = 6379 }, @{ Name = 'Media relay'; Port = 1984 }, @{ Name = 'Backend'; Port = 8080 },
+        @{ Name = 'Worker'; Port = 8090 }, @{ Name = 'Web app'; Port = 5173 })
+}
+$rows = foreach ($part in $parts) {
+    $state = if ($part['Service']) { Get-ContainerState $part['Service'] } elseif (Test-Port $part['Port']) { 'running' } else { 'STOPPED' }
+    [pscustomobject]@{ Part = $part['Name']; Port = $part['Port']; State = $state }
 }
 $rows | Format-Table -AutoSize | Out-String -Width 120
 

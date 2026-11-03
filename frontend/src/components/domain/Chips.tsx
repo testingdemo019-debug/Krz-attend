@@ -14,7 +14,6 @@ import {
   METHODS,
   term,
 } from '@/lib/vocabulary';
-import '@/components/ui/Chip.module.css';
 
 const MUTED_DASH = <span className="muted">—</span>;
 

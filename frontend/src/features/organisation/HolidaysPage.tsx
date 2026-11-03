@@ -24,10 +24,7 @@ import { plural } from '@/lib/text';
 import { useNow } from '@/lib/useNow';
 import { HOLIDAY_TYPES, term } from '@/lib/vocabulary';
 import { HolidayEditor, HolidayImport } from './HolidayDialogs';
-import '@/components/data/DataTable.module.css';
-import '@/components/layout/Card.module.css';
 import { ScrollArea } from '@/components/layout/ScrollArea';
-import './Holidays.module.css';
 
 const DEFAULT_SORT: SortState = { key: 'date', dir: 'asc' };
 const pad = (n: number) => String(n).padStart(2, '0');

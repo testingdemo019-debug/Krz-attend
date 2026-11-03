@@ -1,5 +1,4 @@
 import { Icon } from '@/components/icons/Icon';
-import './Steps.module.css';
 
 /**
  * The prototype's wizard steps: numbered, done ones ticked, the current one highlighted and aria-current. The

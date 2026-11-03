@@ -4,7 +4,6 @@ import { Icon, type IconName } from '@/components/icons/Icon';
 import { cx } from '@/lib/cx';
 import { Spinner } from './Spinner';
 import { tip, type TipPosition } from './Tooltip';
-import './Button.module.css';
 
 export type ButtonVariant = 'default' | 'primary' | 'danger' | 'ghost';
 export type ButtonSize = 'sm' | 'lg';

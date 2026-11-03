@@ -27,8 +27,6 @@ import { Skeleton } from '@/components/ui/Skeleton';
 import { fmtDate } from '@/lib/format';
 import { plural } from '@/lib/text';
 import { ALLOCATION_STATE, RECORD_STATUS, term } from '@/lib/vocabulary';
-import '@/components/data/DataTable.module.css';
-import '@/components/form/Field.module.css';
 
 export function DepartmentDrawer({ code, onClose, onEdit }: { code: string; onClose: () => void; onEdit: () => void }) {
   const detail = useDepartment(code).data;

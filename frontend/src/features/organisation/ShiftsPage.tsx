@@ -24,8 +24,6 @@ import { fmtDate } from '@/lib/format';
 import { plural } from '@/lib/text';
 import { ALLOCATION_STATE, RECORD_STATUS, term } from '@/lib/vocabulary';
 import { ShiftWizard, type ShiftWizardStart } from './ShiftWizard';
-import '@/components/data/DataTable.module.css';
-import '@/components/layout/Card.module.css';
 
 function StatusChip({ status }: { status: string }) {
   const t = term(RECORD_STATUS, status);

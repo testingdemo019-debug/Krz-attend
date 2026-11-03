@@ -9,7 +9,6 @@ import { Modal } from '@/components/feedback/Modal';
 import { Icon } from '@/components/icons/Icon';
 import { CONFIDENCE, term } from '@/lib/vocabulary';
 import { CAMERA_ERRORS, frameJpeg, openCamera, stopCamera } from './camera';
-import './Enrolment.module.css';
 
 const ATTEMPTS = 3;
 

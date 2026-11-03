@@ -11,7 +11,6 @@ import { Icon } from '@/components/icons/Icon';
 import { tip } from '@/components/ui/Tooltip';
 import { cx } from '@/lib/cx';
 import { useCan } from '@/lib/permissions';
-import './CropImage.module.css';
 
 export type CropSize = 'lg' | 'xl';
 export type CropKind = 'face' | 'body';

@@ -20,7 +20,6 @@ import { useCan, useShowScores } from '@/lib/permissions';
 import { plural, shortName } from '@/lib/text';
 import { CONFIDENCE, term } from '@/lib/vocabulary';
 import type { CardChoice, useReviewDecisions } from './useReviewDecisions';
-import './ReviewQueue.module.css';
 
 type Actions = ReturnType<typeof useReviewDecisions>['actions'];
 

@@ -27,8 +27,6 @@ import { Steps } from '@/components/ui/Steps';
 import { addDays, fmtDate, fmtDateShort, todayDay } from '@/lib/format';
 import { plural } from '@/lib/text';
 import { allocationSteps, messages } from './schemas';
-import '@/components/data/DataTable.module.css';
-import '@/components/form/Field.module.css';
 
 export interface AllocationStart {
   targetType?: 'DEPARTMENT' | 'EMPLOYEE';

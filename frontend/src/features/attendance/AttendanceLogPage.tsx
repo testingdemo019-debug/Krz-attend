@@ -34,8 +34,6 @@ import {
 import { useCan, useNeedsPermissionText } from '@/lib/permissions';
 import { useNow } from '@/lib/useNow';
 import { ATTENDANCE_STATUS, term } from '@/lib/vocabulary';
-import '@/components/charts/Legend.module.css';
-import '@/components/domain/CodeCell.module.css';
 
 const DEFAULT_SORT: SortState = { key: 'name', dir: 'asc' };
 const MAX_SPAN = 30;

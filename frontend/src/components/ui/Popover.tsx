@@ -7,7 +7,6 @@ import type { ButtonHTMLAttributes, CSSProperties, ReactElement, ReactNode } fro
 import { keepOpenForCalendar } from '@/components/form/DateField';
 import { Icon, type IconName } from '@/components/icons/Icon';
 import { cx } from '@/lib/cx';
-import './Popover.module.css';
 
 export function Popover({
   trigger,

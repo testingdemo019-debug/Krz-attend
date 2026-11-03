@@ -6,7 +6,6 @@
 import { createContext, useCallback, useContext, useId, useState, type ReactNode } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Modal } from './Modal';
-import '@/components/form/Field.module.css';
 
 export interface ConfirmOptions {
   title: string;

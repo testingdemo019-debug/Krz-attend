@@ -6,7 +6,6 @@ import { DASH, fmtTime } from '@/lib/format';
 import { useCan } from '@/lib/permissions';
 import { plural } from '@/lib/text';
 import { REVIEW_TYPES, term } from '@/lib/vocabulary';
-import '@/features/enrolment/Enrolment.module.css';
 
 /**
  * The prototype's review-gallery: every crop of the item with its time, direction, camera and quality; an unknown

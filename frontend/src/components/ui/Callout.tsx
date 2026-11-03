@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react';
 import { Icon, type IconName } from '@/components/icons/Icon';
 import { cx } from '@/lib/cx';
-import './Callout.module.css';
 
 export type CalloutTone = 'info' | 'warn' | 'danger' | 'ok' | 'neutral';
 

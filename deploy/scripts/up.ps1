@@ -1,16 +1,18 @@
 # Starts KRZ Attend's containers: renders deploy/redis/users.acl from deploy/.env, creates the data folders, then
 # runs docker compose up and waits until the services are healthy.
-# Usage: powershell -ExecutionPolicy Bypass -File deploy\scripts\up.ps1 [--dev] [--cpu] [--services=redis,media-relay] [--help]
+# Usage: powershell -ExecutionPolicy Bypass -File deploy\scripts\up.ps1 [--dev] [--cpu] [--windows] [--build] [--services=redis,media-relay] [--help]
 param([Parameter(ValueFromRemainingArguments = $true)][string[]]$CliArgs)
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'lib\env.ps1')
 
-$opts = ConvertFrom-KrzCliArgs -CliArgs $CliArgs -Known @('help', 'dev', 'cpu', 'services')
+$opts = ConvertFrom-KrzCliArgs -CliArgs $CliArgs -Known @('help', 'dev', 'cpu', 'windows', 'build', 'services')
 if ($opts.ContainsKey('help')) {
     @'
 up - start KRZ Attend's containers (idempotent).
   --dev               add docker-compose.dev.yml (ports on 127.0.0.1 only, for host development)
   --cpu               add docker-compose.cpu.yml (worker without GPU)
+  --windows           add docker-compose.windows.yml (production with the worker on Windows itself)
+  --build             build the images first
   --services=a,b      start only these services (e.g. --services=redis for host development)
 Renders deploy/redis/users.acl from deploy/.env (never committed) and creates the data/ folders first.
 '@
@@ -33,8 +35,10 @@ Write-Output "Data folders ready under $dataDir."
 $files = @('-f', (Join-Path $deploy 'docker-compose.yml'))
 if ($opts.ContainsKey('dev')) { $files += @('-f', (Join-Path $deploy 'docker-compose.dev.yml')) }
 if ($opts.ContainsKey('cpu')) { $files += @('-f', (Join-Path $deploy 'docker-compose.cpu.yml')) }
+if ($opts.ContainsKey('windows')) { $files += @('-f', (Join-Path $deploy 'docker-compose.windows.yml')) }
+$build = @(if ($opts.ContainsKey('build')) { '--build' })
 $services = @(if ($opts.ContainsKey('services')) { $opts['services'].Split(',') | Where-Object { $_ } })
 
-& docker compose --project-directory $deploy --env-file $envPath @files up -d --wait @services
+& docker compose --project-directory $deploy --env-file $envPath @files up -d --wait @build @services
 if ($LASTEXITCODE -ne 0) { throw "docker compose up failed (exit $LASTEXITCODE). See: docker compose logs" }
 Write-Output 'Containers are up and healthy.'

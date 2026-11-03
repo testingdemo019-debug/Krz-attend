@@ -15,7 +15,6 @@ import { Spinner } from '@/components/ui/Spinner';
 import { DASH, exportFileName, fmtDateTime, fmtTime, zoneLabel } from '@/lib/format';
 import { useCan, useNeedsPermissionText } from '@/lib/permissions';
 import { plural } from '@/lib/text';
-import '@/components/data/DataTable.module.css';
 
 function Header({ e }: { e: Evacuation }) {
   return (

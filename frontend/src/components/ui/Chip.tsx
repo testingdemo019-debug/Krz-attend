@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react';
 import { Icon, type IconName } from '@/components/icons/Icon';
 import { cx } from '@/lib/cx';
-import './Chip.module.css';
 
 export type ChipTone = 'green' | 'amber' | 'red' | 'purple' | 'grey' | 'blue';
 

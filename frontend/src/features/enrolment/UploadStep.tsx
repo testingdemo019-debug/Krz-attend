@@ -22,7 +22,6 @@ import { Spinner } from '@/components/ui/Spinner';
 import { landmarker } from './landmarker';
 import { PersonBar } from './SelectStep';
 import { WizardNav } from './WizardNav';
-import './Enrolment.module.css';
 
 const MAX_PHOTOS = 10;
 

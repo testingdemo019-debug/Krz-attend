@@ -27,9 +27,6 @@ import { useNeedsPermissionText, usePermissionCheck } from '@/lib/permissions';
 import { useNow } from '@/lib/useNow';
 import { ATTENDANCE_STATUS, term } from '@/lib/vocabulary';
 import { useCorrectionFlow } from './useCorrection';
-import '@/components/charts/Legend.module.css';
-import '@/components/data/DataTable.module.css';
-import '@/components/domain/Timeline.module.css';
 
 const MISSING = new Set(['MISSING_CHECK_OUT', 'MISSING_CHECK_IN']);
 

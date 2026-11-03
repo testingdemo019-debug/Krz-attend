@@ -5,8 +5,6 @@
 import { useState, type ReactNode } from 'react';
 import { Icon } from '@/components/icons/Icon';
 import { Button } from '@/components/ui/Button';
-import '@/components/data/DataTable.module.css';
-import './MultiSelect.module.css';
 
 export interface MultiSelectItem {
   id: string;

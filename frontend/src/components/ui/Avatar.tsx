@@ -1,7 +1,6 @@
 import { Icon } from '@/components/icons/Icon';
 import { cx } from '@/lib/cx';
 import { hashString, initials } from '@/lib/text';
-import './Avatar.module.css';
 
 /**
  * Initials avatars replace the prototype's generated faces (F7): two letters on a colour picked by a hash of the

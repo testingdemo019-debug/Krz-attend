@@ -27,9 +27,6 @@ import { FormSkeleton } from '@/components/ui/Skeleton';
 import { fmtDate } from '@/lib/format';
 import { useDraft } from '@/lib/useDraft';
 import { CalibrationTag, SettingsCard } from './SettingsCard';
-import '@/components/form/Slider.module.css';
-import '@/components/ui/StatStrip.module.css';
-import './Recognition.module.css';
 
 const TITLE = 'Recognition';
 const SUB =

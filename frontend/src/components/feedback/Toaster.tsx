@@ -1,6 +1,5 @@
 import { Icon, type IconName } from '@/components/icons/Icon';
 import { dismissToast, useToasts, type ToastType } from './toast';
-import './Toaster.module.css';
 
 const ICONS: Record<ToastType, IconName> = {
   success: 'checkCircle',

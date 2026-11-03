@@ -9,7 +9,6 @@ import { keepOpenForCalendar } from '@/components/form/DateField';
 import { Icon } from '@/components/icons/Icon';
 import { SCROLL_REGION, ScrollArea } from '@/components/layout/ScrollArea';
 import { cx } from '@/lib/cx';
-import './Modal.module.css';
 
 export type ModalSize = 'sm' | 'lg' | 'xl';
 

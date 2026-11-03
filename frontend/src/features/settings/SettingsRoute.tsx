@@ -14,7 +14,6 @@ import { ButtonLink } from '@/components/ui/Button';
 import { SETTINGS_PAGES, settingsPageAllowed } from '@/lib/nav';
 import { useNeedsPermissionText, usePermissionCheck } from '@/lib/permissions';
 import { usePageTitle } from '@/lib/usePageTitle';
-import '@/components/layout/SettingsLayout.module.css';
 import { FormSkeleton } from '@/components/ui/Skeleton';
 
 const BODIES: Readonly<Record<string, LazyExoticComponent<ComponentType>>> = {

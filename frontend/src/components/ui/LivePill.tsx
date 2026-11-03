@@ -1,5 +1,3 @@
-import './LivePill.module.css';
-
 export type LivePillState = 'live' | 'rec' | 'conn' | 'off';
 
 const TEXT: Record<LivePillState, string> = { live: 'Live', rec: 'Reconnecting', conn: 'Connecting', off: 'Offline' };

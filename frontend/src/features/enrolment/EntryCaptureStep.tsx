@@ -27,7 +27,6 @@ import { plural } from '@/lib/text';
 import { TEMPLATE_LIGHTS, TEMPLATE_POSES, term } from '@/lib/vocabulary';
 import { PersonBar } from './SelectStep';
 import { WizardNav } from './WizardNav';
-import './Enrolment.module.css';
 
 /** The snapshot of the camera refreshes this often (ms). */
 const SNAPSHOT_EVERY = 1000;

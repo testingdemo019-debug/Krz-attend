@@ -1,5 +1,4 @@
 import { Fragment, type ReactNode } from 'react';
-import './KeyValueList.module.css';
 
 export type KeyValue = readonly [label: string, value: ReactNode];
 

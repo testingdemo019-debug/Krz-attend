@@ -2,7 +2,9 @@
 # deployment of Phase 6): Docker Desktop, then Redis and the media relay (containers), then the backend, the worker
 # and the web app as hidden background processes with their output in data\logs. A part that already answers is left
 # alone. Before the worker and the web app start, their packages are brought up to date when their list changed and
-# the worker's models are checked and downloaded, so a git pull followed by this script is all an update needs. With
+# the worker's models are checked and downloaded, so a git pull followed by this script is all an update needs.
+# With APP_ENV=prod in deploy\.env it starts production instead (D-125): the backend and nginx with HTTPS in containers,
+# built again after a pull, and the worker on Windows; there is no web development server. With
 # --watch the script keeps running and starts again any part that stops answering (the scheduled task
 # from install-startup-task.ps1 runs it that way).
 # Usage: powershell -ExecutionPolicy Bypass -File deploy\scripts\start-all.ps1 [--watch] [--no-web] [--help]
@@ -14,6 +16,7 @@ $opts = ConvertFrom-KrzCliArgs -CliArgs $CliArgs -Known @('help', 'watch', 'no-w
 if ($opts.ContainsKey('help')) {
     @'
 start-all - start Docker Desktop, Redis, the media relay, the backend, the worker and the web app.
+  APP_ENV=prod in deploy\.env starts production: containers with HTTPS on port 443, and the worker.
   --watch    keep running: every minute, start again any part that stopped answering
   --no-web   do not start the web app (npm run dev)
 Logs: data\logs\backend.log, worker.log, web.log, start-all.log, and worker-setup.log and web-setup.log for updates.
@@ -31,6 +34,8 @@ $logs = Join-Path $dataDir 'logs'
 $run = Join-Path $dataDir 'run'
 New-Item -ItemType Directory -Force -Path $logs, $run | Out-Null
 $journal = Join-Path $logs 'start-all.log'
+# As for docker compose, a value in the environment wins over the file.
+$production = $(if ($env:APP_ENV) { $env:APP_ENV } else { Get-KrzEnvValue -Path $envPath -Key 'APP_ENV' -Default 'dev' }) -eq 'prod'
 
 # Write-Host, not the pipeline: steps are printed even inside functions whose result is discarded.
 function Write-Step([string]$Text) {
@@ -80,8 +85,24 @@ function Start-DockerDesktop {
 
 function Start-Containers {
     Start-DockerDesktop
+    if ($production) { Start-ProductionContainers; return }
     Write-Step 'Starting Redis and the media relay.'
     & (Join-Path $PSScriptRoot 'up.ps1') --dev '--services=redis,media-relay' | Out-Null
+}
+
+# The images are built again only when the code changed, so a restart with no internet still starts.
+function Start-ProductionContainers {
+    foreach ($file in 'fullchain.pem', 'privkey.pem') {
+        if (-not (Test-Path -LiteralPath (Join-Path $deploy "nginx\certs\$file"))) { throw "deploy\nginx\certs\$file is missing: see README.md (production)." }
+    }
+    $env:DOCKER_HOST_GATEWAY = 'host-gateway'
+    $stamp = Join-Path $run 'images.stamp'
+    $commit = (& git -C $root rev-parse HEAD)
+    $built = (Test-Path -LiteralPath $stamp) -and ((Get-Content -LiteralPath $stamp -Raw).Trim() -eq $commit)
+    Write-Step $(if ($built) { 'Starting the containers.' } else { 'Building and starting the containers (several minutes after an update).' })
+    $build = @(if (-not $built) { '--build' })
+    & (Join-Path $PSScriptRoot 'up.ps1') --windows @build '--services=redis,media-relay,backend,web' | Out-Null
+    Set-Content -LiteralPath $stamp -Value $commit -Encoding ascii
 }
 
 function Find-JavaHome {
@@ -159,13 +180,20 @@ function Start-Web {
 
 # Each part: its port, how long its first start may take, and how to start it. The order matters: the backend and
 # the worker need Redis; the web app needs the backend.
-$parts = @(
-    @{ Name = 'redis'; Port = 6379; Seconds = 60; Start = { Start-Containers } },
-    @{ Name = 'media relay'; Port = 1984; Seconds = 60; Start = { Start-Containers } },
-    @{ Name = 'backend'; Port = 8080; Seconds = 600; Start = { Start-Backend } },
-    @{ Name = 'worker'; Port = 8090; Seconds = 300; Start = { Start-Worker } }
-)
-if (-not $opts.ContainsKey('no-web')) { $parts += @{ Name = 'web app'; Port = 5173; Seconds = 120; Start = { Start-Web } } }
+if ($production) {
+    $parts = @(
+        @{ Name = 'website'; Port = 443; Seconds = 60; Start = { Start-Containers } },
+        @{ Name = 'worker'; Port = 8090; Seconds = 300; Start = { Start-Worker } }
+    )
+} else {
+    $parts = @(
+        @{ Name = 'redis'; Port = 6379; Seconds = 60; Start = { Start-Containers } },
+        @{ Name = 'media relay'; Port = 1984; Seconds = 60; Start = { Start-Containers } },
+        @{ Name = 'backend'; Port = 8080; Seconds = 600; Start = { Start-Backend } },
+        @{ Name = 'worker'; Port = 8090; Seconds = 300; Start = { Start-Worker } }
+    )
+    if (-not $opts.ContainsKey('no-web')) { $parts += @{ Name = 'web app'; Port = 5173; Seconds = 120; Start = { Start-Web } } }
+}
 
 function Start-Missing {
     foreach ($part in $parts) {
@@ -177,7 +205,8 @@ function Start-Missing {
 
 Write-Step 'start-all: checking every part.'
 Start-Missing
-Write-Step 'start-all: running. Web app: http://localhost:5173 (status: deploy\scripts\status.ps1).'
+$address = if ($production) { Get-KrzEnvValue -Path $envPath -Key 'APP_BASE_URL' } else { 'http://localhost:5173' }
+Write-Step "start-all: running. Web app: $address (status: deploy\scripts\status.ps1)."
 
 if ($opts.ContainsKey('watch')) {
     while ($true) {

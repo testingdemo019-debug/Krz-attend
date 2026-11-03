@@ -14,7 +14,6 @@ import { KrzWordmark } from '@/components/layout/KrzLogo';
 import { Modal } from '@/components/feedback/Modal';
 import { fmtDate } from '@/lib/format';
 import { ScanAnimation } from './ScanAnimation';
-import './SignIn.module.css';
 
 type PublicNotice = components['schemas']['PublicNoticeController.PublicNotice'];
 

@@ -3,7 +3,6 @@ import { Link } from 'react-router';
 import { Icon, type IconName } from '@/components/icons/Icon';
 import type { ChipTone } from '@/components/ui/Chip';
 import { cx } from '@/lib/cx';
-import './KpiCard.module.css';
 
 interface KpiContent {
   label: string;

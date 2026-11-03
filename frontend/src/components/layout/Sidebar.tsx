@@ -4,7 +4,6 @@ import { Icon } from '@/components/icons/Icon';
 import { BrandMark } from '@/components/layout/BrandMark';
 import { cx } from '@/lib/cx';
 import type { NavBadge, NavSection } from '@/lib/nav';
-import './Sidebar.module.css';
 
 export interface SidebarProps {
   sections: readonly NavSection[];

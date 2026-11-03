@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react';
 import { cx } from '@/lib/cx';
-import './AppShell.module.css';
 
 /** The prototype's shell: skip link, sidebar, and the main column with the topbar and the page. */
 export function AppShell({

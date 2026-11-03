@@ -1,5 +1,5 @@
-# KRZ Attend — production baseline (runtime topology, Part A). PostgreSQL is NOT a service: it runs on the host.
-# Services are added here as each part is built (backend and web follow in Phase 6).
+# KRZ Attend — production (runtime topology, Part A). PostgreSQL is NOT a service: it runs on the host.
+# On a Windows machine the worker runs on the host as well (docker-compose.windows.yml, deploy/scripts/start-all).
 # Start through deploy/scripts/up, which first renders redis/users.acl from deploy/.env and creates the data folders.
 name: krz-attend
 
@@ -74,9 +74,11 @@ services:
     mem_limit: 4g
     # Time to release held U-turn crossings and finish writing the spool (SIGTERM).
     stop_grace_period: 20s
-    # The backend starts first once it joins this file (Phase 6); the worker waits for the database views itself.
+    # The backend creates the database views the worker reads.
     depends_on:
       redis:
+        condition: service_healthy
+      backend:
         condition: service_healthy
     extra_hosts:
       - "host.docker.internal:${DOCKER_HOST_GATEWAY:-172.28.0.1}"
@@ -123,6 +125,107 @@ services:
     networks:
       - internal
 
+  backend:
+    <<: *hardening
+    image: krz-attend-backend:${APP_VERSION:?set APP_VERSION in deploy/.env}
+    build:
+      context: ..
+      dockerfile: backend/Dockerfile
+    mem_limit: 2g
+    stop_grace_period: 25s
+    depends_on:
+      redis:
+        condition: service_healthy
+      media-relay:
+        condition: service_healthy
+    extra_hosts:
+      - "host.docker.internal:${DOCKER_HOST_GATEWAY:-172.28.0.1}"
+    # Only what the backend reads (application.yml), never the whole .env.
+    environment:
+      APP_ENV: ${APP_ENV:?set APP_ENV in deploy/.env}
+      APP_VERSION: ${APP_VERSION}
+      APP_BASE_URL: ${APP_BASE_URL:?set APP_BASE_URL in deploy/.env}
+      APP_TIMEZONE: ${APP_TIMEZONE:-Asia/Kolkata}
+      ORG_NAME: ${ORG_NAME:-KRZ Technologies Pvt. Ltd.}
+      ORG_DOMAIN: ${ORG_DOMAIN:-krztechnologies.com}
+      BOOTSTRAP_ADMIN_EMAILS: ${BOOTSTRAP_ADMIN_EMAILS:-}
+      IT_HELPDESK_EMAIL: ${IT_HELPDESK_EMAIL:-}
+      DATA_DIR: /data
+      SESSION_ABSOLUTE_HOURS: ${SESSION_ABSOLUTE_HOURS:-12}
+      DB_HOST: host.docker.internal
+      DB_PORT: ${DB_PORT:-5432}
+      DB_NAME: ${DB_NAME:-krz_attend}
+      DB_OWNER_USER: ${DB_OWNER_USER:-krz_owner}
+      DB_OWNER_PASSWORD: ${DB_OWNER_PASSWORD:?run database/bootstrap/run_bootstrap}
+      DB_APP_USER: ${DB_APP_USER:-krz_app}
+      DB_APP_PASSWORD: ${DB_APP_PASSWORD:?run database/bootstrap/run_bootstrap}
+      DB_POOL_MAX: ${DB_POOL_MAX:-20}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_BACKEND_USER: ${REDIS_BACKEND_USER:-krz_backend}
+      REDIS_BACKEND_PASSWORD: ${REDIS_BACKEND_PASSWORD:?run deploy/scripts/init-env}
+      ENTRA_TENANT_ID: ${ENTRA_TENANT_ID:?set ENTRA_TENANT_ID in deploy/.env}
+      ENTRA_CLIENT_ID: ${ENTRA_CLIENT_ID:?set ENTRA_CLIENT_ID in deploy/.env}
+      ENTRA_CLIENT_SECRET: ${ENTRA_CLIENT_SECRET:-}
+      ENTRA_CLIENT_SECRET_EXPIRES: ${ENTRA_CLIENT_SECRET_EXPIRES:-}
+      ENTRA_ALLOWED_DOMAIN: ${ENTRA_ALLOWED_DOMAIN:-krztechnologies.com}
+      ENTRA_SYNC_SCOPE: ${ENTRA_SYNC_SCOPE:-all}
+      ENTRA_SYNC_GROUP_IDS: ${ENTRA_SYNC_GROUP_IDS:-}
+      ENTRA_SYNC_EXCLUDE: ${ENTRA_SYNC_EXCLUDE:-}
+      MAIL_ENABLED: ${MAIL_ENABLED:-true}
+      MAIL_PROVIDER: ${MAIL_PROVIDER:-graph}
+      MAIL_SENDER: ${MAIL_SENDER:-attend-noreply@krztechnologies.com}
+      MAIL_TEST_RECIPIENT: ${MAIL_TEST_RECIPIENT:-}
+      PUSH_ENABLED: ${PUSH_ENABLED:-false}
+      HRMS_ENABLED: ${HRMS_ENABLED:-false}
+      # The key ring, as for the worker. A key rotation (RUNBOOK) adds the new ENCRYPTION_KEY_<ID> here too.
+      ENCRYPTION_ACTIVE_KEY_ID: ${ENCRYPTION_ACTIVE_KEY_ID:-k1}
+      ENCRYPTION_KEY_k1: ${ENCRYPTION_KEY_k1:?run deploy/scripts/init-env}
+      WORKER_ID: ${WORKER_ID:-worker-1}
+      WORKER_API_URL: http://worker:8090
+      WORKER_API_TOKEN: ${WORKER_API_TOKEN:?run deploy/scripts/init-env}
+      MEDIA_RELAY_URL: http://media-relay:1984
+      GO2RTC_API_USER: ${GO2RTC_API_USER:-krz_relay}
+      GO2RTC_API_PASSWORD: ${GO2RTC_API_PASSWORD:?run deploy/scripts/init-env}
+    volumes:
+      - ${DATA_DIR:-../data}/crops:/data/crops
+      - ${DATA_DIR:-../data}/uploads:/data/uploads
+      - ${DATA_DIR:-../data}/logs/backend:/data/logs/backend
+      - ${DATA_DIR:-../data}/backups:/data/backups:ro
+    networks:
+      - internal
+
+  web:
+    <<: *hardening
+    image: krz-attend-web:${APP_VERSION:?set APP_VERSION in deploy/.env}
+    build:
+      context: ..
+      dockerfile: frontend/Dockerfile
+    # The image's own unprivileged nginx user.
+    user: "101:101"
+    mem_limit: 256m
+    depends_on:
+      backend:
+        condition: service_healthy
+        # nginx resolves the backend's address when it starts.
+        restart: true
+      media-relay:
+        condition: service_healthy
+        restart: true
+    # Read by 40-go2rtc-auth.sh, which adds them to the live-video proxy.
+    environment:
+      GO2RTC_API_USER: ${GO2RTC_API_USER:-krz_relay}
+      GO2RTC_API_PASSWORD: ${GO2RTC_API_PASSWORD:?run deploy/scripts/init-env}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      # fullchain.pem and privkey.pem (PENDING P-01); never in Git or an image.
+      - ./nginx/certs:/etc/nginx/certs:ro
+    networks:
+      - internal
+      - edge
+
 networks:
   # Fixed subnet so pg_hba.conf can allow exactly 172.28.0.0/24; the host interface is named krz-int for ufw.
   # Not "internal: true": the backend needs Microsoft Graph and the worker and media relay need the camera.
@@ -134,6 +237,6 @@ networks:
       config:
         - subnet: 172.28.0.0/24
           gateway: 172.28.0.1
-  # Only "web" (nginx) will publish ports 80/443.
+  # Only "web" (nginx) publishes ports 80/443.
   edge:
     driver: bridge

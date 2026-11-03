@@ -7,7 +7,6 @@
 import type { CSSProperties } from 'react';
 import { cx } from '@/lib/cx';
 import { KrzK, KrzWordmark } from './KrzLogo';
-import './Sidebar.module.css';
 
 export function BrandMark({
   logoUrl,

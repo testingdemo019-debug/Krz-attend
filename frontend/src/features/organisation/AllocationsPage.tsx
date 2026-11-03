@@ -34,8 +34,6 @@ import { KeyValueList } from '@/components/ui/KeyValueList';
 import { exportFileName, fmtDate, fmtDateTime, fmtDay, todayDay } from '@/lib/format';
 import { useNow } from '@/lib/useNow';
 import { ALLOCATION_STATE, term } from '@/lib/vocabulary';
-import '@/components/domain/Timeline.module.css';
-import '@/components/form/Field.module.css';
 
 const DEFAULT_SORT: SortState = { key: 'from', dir: 'desc' };
 

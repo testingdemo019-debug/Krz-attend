@@ -1,9 +1,5 @@
 import type { ReactNode } from 'react';
 import { cx } from '@/lib/cx';
-import './Skeleton.module.css';
-import '@/components/data/DataTable.module.css';
-import '@/components/data/KpiCard.module.css';
-import '@/components/layout/Card.module.css';
 
 export function Skeleton({ className, width, height }: { className?: string; width?: string; height?: string }) {
   return (

@@ -12,7 +12,6 @@ import { fmtTime } from '@/lib/format';
 import { MsePlayer, type VideoState } from '@/lib/msePlayer';
 import { containRect, drawGeometry, drawTracks, type Hit, type OverlayOptions } from '@/lib/overlays';
 import { useCan } from '@/lib/permissions';
-import './CameraTile.module.css';
 
 /**
  * The pill for a camera (the prototype's livePill): the camera's status as the server sees it (worker heartbeat), not

@@ -15,8 +15,6 @@ import { Chip } from '@/components/ui/Chip';
 import { KeyValueList } from '@/components/ui/KeyValueList';
 import { fmtTime } from '@/lib/format';
 import { WizardNav } from './WizardNav';
-import '@/components/data/DataTable.module.css';
-import '@/components/domain/CropImage.module.css';
 
 const firstName = (name: string) => name.split(' ')[0] ?? name;
 

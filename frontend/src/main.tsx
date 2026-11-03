@@ -1,4 +1,4 @@
-import '@/styles/cascade';
+import '@/styles/cascade.css';
 import { setNonce } from 'get-nonce';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';

@@ -4,7 +4,6 @@
  */
 import type { ReactNode } from 'react';
 import { EmptyState } from '@/components/feedback/EmptyState';
-import '@/components/layout/Card.module.css';
 import { ButtonLink } from '@/components/ui/Button';
 import { useNeedsPermissionText, usePermissionCheck, type PermissionKey } from '@/lib/permissions';
 import { usePageTitle, useRouteTitle } from '@/lib/usePageTitle';

@@ -20,7 +20,6 @@ import type { IconName } from '@/components/icons/Icon';
 import { usePageTitle } from '@/lib/usePageTitle';
 import { signInSchema, type SignInInput, type SignInValues } from './schemas';
 import { SignInFrame } from './SignInFrame';
-import '@/components/form/Field.module.css';
 
 const NOTICES: Record<string, readonly [CalloutTone, IconName, string]> = {
   signed_out: ['ok', 'checkCircle', 'You’ve signed out.'],

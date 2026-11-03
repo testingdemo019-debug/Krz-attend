@@ -4,7 +4,6 @@
  */
 import { useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { cx } from '@/lib/cx';
-import './FileDrop.module.css';
 
 export function FileDrop({
   label,

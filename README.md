@@ -108,14 +108,39 @@ instead of the last line, so it keeps watching. Check the result with `deploy\sc
 - **This setup** (`APP_ENV=dev`) sends **every** e-mail only to `MAIL_TEST_RECIPIENT`. Its subject starts with
   `[DEV → address]`, the person it was meant for. Without that address nothing is sent. Links use `APP_BASE_URL`
   (`http://localhost:5173`), so they open on this machine only.
-- **Real recipients** need the production setup: `APP_ENV=prod`, `MAIL_TEST_RECIPIENT` empty (the backend log warns
-  when one is left over), `APP_BASE_URL` set to the https address people open, and `MAIL_SENDER` a real mailbox. It runs
-  behind HTTPS, which Microsoft sign-in and the secure session cookie need from other PCs; it is not set up yet.
+- **Real recipients** need production (step 10): `APP_ENV=prod`, `MAIL_TEST_RECIPIENT` empty (the backend log warns
+  when one is left over), `APP_BASE_URL` set to the https address people open, and `MAIL_SENDER` a real mailbox.
 - **Check:** Settings, Notifications, **Send test e-mail** sends one to your own work address (in this setup: to
   `MAIL_TEST_RECIPIENT`).
 
+## 10. Production on this Windows PC
+PostgreSQL and the worker (on the GPU) run on Windows; Redis, the video relay, the backend and nginx (https) run in Docker
+Desktop. Only ports 80 and 443 are open to the network: port 80 only redirects to https.
+
+**Needed first:**
+- A fixed IP for this PC (a reservation in the router) and a DNS record pointing your name to it.
+- In Microsoft Entra, under App registrations, KRZ Attend, Authentication, add
+  `https://<your name>/login/oauth2/code/azure`.
+- A certificate for your name, as two files in `deploy\nginx\certs`: `fullchain.pem` and `privkey.pem`. They stay out of
+  Git; never share the private key.
+
+**Then:**
+1. In `deploy\.env` set `APP_ENV=prod`, `APP_BASE_URL=https://<your name>` and leave `MAIL_TEST_RECIPIENT` empty. From now
+   on e-mail goes to the real recipients.
+2. Stop the running setup and start production. The first start builds the images, which can take a long time; if a
+   download fails, run `start-all` again and it continues from where it stopped.
+```powershell
+powershell -ExecutionPolicy Bypass -File deploy\scripts\stop-all.ps1
+powershell -ExecutionPolicy Bypass -File deploy\scripts\start-all.ps1
+powershell -ExecutionPolicy Bypass -File deploy\scripts\status.ps1
+```
+3. From another PC open `https://<your name>` and sign in. If it does not answer, allow ports 80 and 443 in Windows
+   Firewall on this PC.
+
+Step 7's task and step 8's update work the same in production; the images are built again when the code changed. To go
+back to the development setup, set `APP_ENV=dev` and `APP_BASE_URL=http://localhost:5173`.
+
 ## Notes
 - Only one machine should run the worker for a camera at a time, or both record every crossing in their own database.
-- The web app answers on this machine only (`localhost`). Opening it from other PCs needs HTTPS and the machine's
-  address added to the Microsoft sign-in app (the production setup).
+- In the development setup the web app answers on this machine only (`localhost`). Other PCs use production (step 10).
 - In the app: Settings, Cameras to add the camera, draw the zone and the tripwire; Enrolment to enrol the employees.

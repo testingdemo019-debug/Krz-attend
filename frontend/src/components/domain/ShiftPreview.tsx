@@ -4,7 +4,6 @@
  */
 import { Legend } from '@/components/charts/Legend';
 import { fmtHm } from '@/lib/format';
-import '@/components/charts/Legend.module.css';
 
 export interface ShiftShape {
   start: string;

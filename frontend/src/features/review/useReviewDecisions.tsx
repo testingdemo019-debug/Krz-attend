@@ -22,7 +22,6 @@ import { EmployeePicker } from '@/components/form/EmployeePicker';
 import { EFFECTS, REVIEW_ACTIONS, REVIEW_TYPES, term, type ReviewAction } from '@/lib/vocabulary';
 import { fmtTime } from '@/lib/format';
 import { plural } from '@/lib/text';
-import '@/components/form/Field.module.css';
 import { bestOf } from './ReviewCard';
 
 export type BulkOp = 'NOT_EMPLOYEE' | 'CONFIRM' | 'REJECT';

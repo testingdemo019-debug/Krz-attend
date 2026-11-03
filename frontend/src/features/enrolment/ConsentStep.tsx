@@ -15,7 +15,6 @@ import { CONSENT_METHODS, term } from '@/lib/vocabulary';
 import { PersonBar } from './SelectStep';
 import type { ConsentDraft } from './wizard';
 import { WizardNav } from './WizardNav';
-import '@/components/form/Field.module.css';
 
 /** How consent can be obtained (the vocabulary's methods; "Written request" is for withdrawals). */
 const GIVEN_METHODS: readonly ConsentMethod[] = ['WRITTEN_FORM', 'EMAIL_CONFIRMATION'];

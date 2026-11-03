@@ -27,7 +27,6 @@ import { IconButton } from '@/components/ui/IconButton';
 import { useCheckOnEveryChange } from '@/lib/forms';
 import { plural } from '@/lib/text';
 import { locationSchema, type LocationInput, type LocationValues } from './schemas';
-import '@/components/form/Field.module.css';
 
 const SERVER_FIELDS: Record<string, keyof LocationInput> = { name: 'name', code: 'code', address: 'address' };
 
