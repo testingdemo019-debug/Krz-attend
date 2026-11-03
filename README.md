@@ -119,6 +119,9 @@ Desktop. Only ports 80 and 443 are open to the network: port 80 only redirects t
 
 **Needed first:**
 - A fixed IP for this PC (a reservation in the router) and a DNS record pointing your name to it.
+- Ports 80 and 443 free on this PC. `start-all` names any program that holds one. If they must stay in use, set
+  `WEB_HTTPS_PORT=8443` in `deploy\.env` and use `https://<your name>:8443` in `APP_BASE_URL`, in the Entra redirect URL
+  and in the browser. Plain http is then not served, and the address without the port does not open KRZ Attend.
 - In Microsoft Entra, under App registrations, KRZ Attend, Authentication, add
   `https://<your name>/login/oauth2/code/azure`.
 - A certificate for your name, as two files in `deploy\nginx\certs`: `fullchain.pem` and `privkey.pem`. They stay out of
@@ -139,8 +142,8 @@ powershell -ExecutionPolicy Bypass -File deploy\scripts\stop-all.ps1
 powershell -ExecutionPolicy Bypass -File deploy\scripts\start-all.ps1
 powershell -ExecutionPolicy Bypass -File deploy\scripts\status.ps1
 ```
-3. From another PC open `https://<your name>` and sign in. If it does not answer, allow ports 80 and 443 in Windows
-   Firewall on this PC.
+3. From another PC open `https://<your name>` and sign in. If it does not answer, allow ports 80 and 443 (or your
+   `WEB_HTTPS_PORT`) in Windows Firewall on this PC.
 
 Step 7's task and step 8's update work the same in production; the images are built again when the code changed. To go
 back to the development setup, set `APP_ENV=dev` and `APP_BASE_URL=http://localhost:5173`.

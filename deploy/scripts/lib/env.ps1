@@ -30,6 +30,22 @@ function ConvertFrom-KrzCliArgs {
     return $result
 }
 
+# The https port when another program holds 80 and 443 (docker-compose.other-port.yml); empty otherwise. As for docker
+# compose, a value in the environment wins over the file.
+function Get-KrzHttpsPort {
+    if ($env:WEB_HTTPS_PORT) { return $env:WEB_HTTPS_PORT }
+    return Get-KrzEnvValue -Path (Get-KrzEnvPath) -Key 'WEB_HTTPS_PORT'
+}
+
+# Is this production container up and healthy? A port alone cannot say: another program may hold it.
+function Test-KrzContainer {
+    param([Parameter(Mandatory)][string]$Service)
+    # Native commands write to stderr; with 'Stop' PowerShell 5.1 would turn that into an error.
+    $ErrorActionPreference = 'Continue'
+    $state = & docker inspect --format '{{.State.Health.Status}}' "krz-attend-$Service-1" 2>$null
+    return ($state -eq 'healthy')
+}
+
 # Returns an ordered hashtable KEY -> value. Comment lines (#) and blank lines are skipped.
 function Read-KrzEnvFile {
     param([Parameter(Mandatory)][string]$Path)

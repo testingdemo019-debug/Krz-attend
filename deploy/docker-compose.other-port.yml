@@ -1,0 +1,6 @@
+# Production on a Windows machine where another program holds ports 80 and 443 (D-128), added by deploy/scripts/up.ps1
+# when WEB_HTTPS_PORT is set in deploy/.env: https on that port, and no plain http, which only redirects to port 443.
+services:
+  web:
+    ports: !override
+      - "${WEB_HTTPS_PORT:?set WEB_HTTPS_PORT in deploy/.env}:443"

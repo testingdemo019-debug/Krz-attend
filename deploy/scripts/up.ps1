@@ -36,6 +36,7 @@ $files = @('-f', (Join-Path $deploy 'docker-compose.yml'))
 if ($opts.ContainsKey('dev')) { $files += @('-f', (Join-Path $deploy 'docker-compose.dev.yml')) }
 if ($opts.ContainsKey('cpu')) { $files += @('-f', (Join-Path $deploy 'docker-compose.cpu.yml')) }
 if ($opts.ContainsKey('windows')) { $files += @('-f', (Join-Path $deploy 'docker-compose.windows.yml')) }
+if ($opts.ContainsKey('windows') -and (Get-KrzHttpsPort)) { $files += @('-f', (Join-Path $deploy 'docker-compose.other-port.yml')) }
 $build = @(if ($opts.ContainsKey('build')) { '--build' })
 $services = @(if ($opts.ContainsKey('services')) { $opts['services'].Split(',') | Where-Object { $_ } })
 

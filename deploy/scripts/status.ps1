@@ -20,23 +20,18 @@ function Test-Port([int]$Port) {
     return $false
 }
 
-# In production (APP_ENV=prod) the backend and the media relay answer only inside Docker.
-function Get-ContainerState([string]$Service) {
-    $ErrorActionPreference = 'Continue'
-    $state = & docker inspect --format '{{.State.Health.Status}}' "krz-attend-$Service-1" 2>$null
-    if ($state -eq 'healthy') { 'running' } else { 'STOPPED' }
-}
-
 $production = $(if ($env:APP_ENV) { $env:APP_ENV } else { Get-KrzEnvValue -Path (Get-KrzEnvPath) -Key 'APP_ENV' -Default 'dev' }) -eq 'prod'
 $parts = if ($production) {
-    @(@{ Name = 'Redis'; Port = 6379 }, @{ Name = 'Media relay'; Service = 'media-relay' }, @{ Name = 'Backend'; Service = 'backend' },
-        @{ Name = 'Worker'; Port = 8090 }, @{ Name = 'Website (https)'; Port = 443 })
+    # The containers are asked directly: some answer only inside Docker, and another program may hold a port.
+    @(@{ Name = 'Redis'; Service = 'redis' }, @{ Name = 'Media relay'; Service = 'media-relay' }, @{ Name = 'Backend'; Service = 'backend' },
+        @{ Name = 'Worker'; Port = 8090 }, @{ Name = 'Website (https)'; Service = 'web'; Port = $(if (Get-KrzHttpsPort) { Get-KrzHttpsPort } else { 443 }) })
 } else {
     @(@{ Name = 'Redis'; Port = 6379 }, @{ Name = 'Media relay'; Port = 1984 }, @{ Name = 'Backend'; Port = 8080 },
         @{ Name = 'Worker'; Port = 8090 }, @{ Name = 'Web app'; Port = 5173 })
 }
 $rows = foreach ($part in $parts) {
-    $state = if ($part['Service']) { Get-ContainerState $part['Service'] } elseif (Test-Port $part['Port']) { 'running' } else { 'STOPPED' }
+    $up = if ($part['Service']) { Test-KrzContainer $part['Service'] } else { Test-Port $part['Port'] }
+    $state = if ($up) { 'running' } else { 'STOPPED' }
     [pscustomobject]@{ Part = $part['Name']; Port = $part['Port']; State = $state }
 }
 $rows | Format-Table -AutoSize | Out-String -Width 120
@@ -54,7 +49,7 @@ $task = Get-ScheduledTask -TaskName 'KRZ Attend' -ErrorAction SilentlyContinue
 if ($task) { "Scheduled task 'KRZ Attend': $($task.State)" } else { "Scheduled task 'KRZ Attend': not installed" }
 
 # Certbot renews with 30 days left, so fewer than 20 means the daily renewal has been failing.
-$chain = Join-Path (Split-Path $PSScriptRoot) 'nginx\certsullchain.pem'
+$chain = Join-Path (Split-Path $PSScriptRoot) 'nginx\certs\fullchain.pem'
 if ($production -and (Test-Path -LiteralPath $chain)) {
     $until = (New-Object Security.Cryptography.X509Certificates.X509Certificate2 $chain).NotAfter
     $left = ($until - (Get-Date)).Days

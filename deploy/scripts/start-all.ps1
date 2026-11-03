@@ -36,6 +36,7 @@ New-Item -ItemType Directory -Force -Path $logs, $run | Out-Null
 $journal = Join-Path $logs 'start-all.log'
 # As for docker compose, a value in the environment wins over the file.
 $production = $(if ($env:APP_ENV) { $env:APP_ENV } else { Get-KrzEnvValue -Path $envPath -Key 'APP_ENV' -Default 'dev' }) -eq 'prod'
+$httpsPort = Get-KrzHttpsPort
 
 # Write-Host, not the pipeline: steps are printed even inside functions whose result is discarded.
 function Write-Step([string]$Text) {
@@ -92,6 +93,11 @@ function Start-Containers {
 
 # The images are built again only when the code changed, so a restart with no internet still starts.
 function Start-ProductionContainers {
+    foreach ($port in $(if ($httpsPort) { $httpsPort } else { 80, 443 })) {
+        $owners = Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue |
+            ForEach-Object { (Get-Process -Id $_.OwningProcess).ProcessName } | Where-Object { $_ -notlike 'com.docker*' } | Select-Object -Unique
+        if ($owners) { throw "Port $port is in use by $($owners -join ', '), and KRZ Attend needs it. Stop that program first: see README.md (production)." }
+    }
     foreach ($file in 'fullchain.pem', 'privkey.pem') {
         if (-not (Test-Path -LiteralPath (Join-Path $deploy "nginx\certs\$file"))) { throw "deploy\nginx\certs\$file is missing: see README.md (production)." }
     }
@@ -182,7 +188,7 @@ function Start-Web {
 # the worker need Redis; the web app needs the backend.
 if ($production) {
     $parts = @(
-        @{ Name = 'website'; Port = 443; Seconds = 60; Start = { Start-Containers } },
+        @{ Name = 'website'; Port = $(if ($httpsPort) { [int]$httpsPort } else { 443 }); Container = 'web'; Seconds = 60; Start = { Start-Containers } },
         @{ Name = 'worker'; Port = 8090; Seconds = 300; Start = { Start-Worker } }
     )
 } else {
@@ -197,7 +203,8 @@ if ($production) {
 
 function Start-Missing {
     foreach ($part in $parts) {
-        if (Test-Port $part.Port) { continue }
+        $up = if ($part['Container']) { Test-KrzContainer $part['Container'] } else { Test-Port $part.Port }
+        if ($up) { continue }
         & $part.Start
         [void](Wait-Port $part.Port $part.Seconds $part.Name)
     }
